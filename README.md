@@ -1,36 +1,195 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 📁 Architecture Complète - Frontend Next.js
 
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+frontend-gestion-academique/
+│
+├── src/
+│   ├── app/                                    # Next.js App Router
+│   │   ├── (auth)/                            # Routes publiques
+│   │   │   ├── login/
+│   │   │   │   └── page.jsx                   # Page login
+│   │   │   └── layout.jsx                     # Layout auth (sans sidebar)
+│   │   │
+│   │   ├── (admin)/                           # Routes admin
+│   │   │   ├── dashboard/page.jsx
+│   │   │   ├── utilisateurs/
+│   │   │   │   ├── page.jsx                   # Liste
+│   │   │   │   ├── nouveau/page.jsx           # Créer
+│   │   │   │   └── [id]/page.jsx              # Détails/Modifier
+│   │   │   ├── filieres/
+│   │   │   │   ├── page.jsx
+│   │   │   │   ├── nouveau/page.jsx
+│   │   │   │   └── [id]/page.jsx
+│   │   │   ├── niveaux/page.jsx
+│   │   │   ├── cours/
+│   │   │   │   ├── page.jsx
+│   │   │   │   ├── nouveau/page.jsx
+│   │   │   │   └── [id]/page.jsx
+│   │   │   ├── annees-academiques/page.jsx
+│   │   │   ├── semestres/page.jsx
+│   │   │   ├── inscriptions/page.jsx
+│   │   │   ├── evaluations/page.jsx
+│   │   │   ├── notes/
+│   │   │   │   ├── page.jsx
+│   │   │   │   └── validation/page.jsx
+│   │   │   ├── bulletins/page.jsx
+│   │   │   ├── emploi-du-temps/page.jsx
+│   │   │   ├── annonces/
+│   │   │   │   ├── page.jsx
+│   │   │   │   └── nouveau/page.jsx
+│   │   │   ├── messages/page.jsx
+│   │   │   ├── documents/page.jsx
+│   │   │   ├── rapports/page.jsx
+│   │   │   ├── parametres/page.jsx
+│   │   │   └── layout.jsx                     # Layout admin (avec sidebar)
+│   │   │
+│   │   ├── (professeur)/                      # Routes professeur
+│   │   │   ├── dashboard/page.jsx
+│   │   │   ├── mes-cours/page.jsx
+│   │   │   ├── notes/
+│   │   │   │   └── saisie/
+│   │   │   │       └── [evaluationId]/page.jsx
+│   │   │   ├── emploi-du-temps/page.jsx
+│   │   │   ├── annonces/page.jsx
+│   │   │   ├── messages/page.jsx
+│   │   │   ├── documents/page.jsx
+│   │   │   └── layout.jsx
+│   │   │
+│   │   ├── (etudiant)/                        # Routes étudiant
+│   │   │   ├── dashboard/page.jsx
+│   │   │   ├── mes-notes/page.jsx
+│   │   │   ├── mes-bulletins/page.jsx
+│   │   │   ├── mes-cours/page.jsx
+│   │   │   ├── emploi-du-temps/page.jsx
+│   │   │   ├── annonces/page.jsx
+│   │   │   ├── messages/page.jsx
+│   │   │   ├── documents/page.jsx
+│   │   │   └── layout.jsx
+│   │   │
+│   │   ├── layout.jsx                         # Layout racine
+│   │   ├── globals.css                        # Styles globaux
+│   │   └── not-found.jsx                      # Page 404
+│   │
+│   ├── components/                            # Composants réutilisables
+│   │   ├── ui/                               # shadcn/ui components
+│   │   │   ├── button.jsx
+│   │   │   ├── card.jsx
+│   │   │   ├── input.jsx
+│   │   │   ├── table.jsx
+│   │   │   └── ... (composants shadcn)
+│   │   │
+│   │   ├── layout/                           # Layout components
+│   │   │   ├── Sidebar.jsx                   # Menu latéral
+│   │   │   ├── Header.jsx                    # En-tête
+│   │   │   ├── MobileNav.jsx                 # Navigation mobile
+│   │   │   └── UserMenu.jsx                  # Menu utilisateur
+│   │   │
+│   │   ├── shared/                           # Composants partagés
+│   │   │   ├── DataTable.jsx                 # Table générique
+│   │   │   ├── SearchBar.jsx                 # Barre de recherche
+│   │   │   ├── Pagination.jsx                # Pagination
+│   │   │   ├── LoadingSpinner.jsx            # Chargement
+│   │   │   ├── EmptyState.jsx                # État vide
+│   │   │   ├── ErrorAlert.jsx                # Alerte erreur
+│   │   │   └── ConfirmDialog.jsx             # Dialogue confirmation
+│   │   │
+│   │   ├── dashboard/                        # Composants dashboard
+│   │   │   ├── StatsCard.jsx                 # Carte statistique
+│   │   │   ├── RecentActivity.jsx            # Activité récente
+│   │   │   ├── QuickActions.jsx              # Actions rapides
+│   │   │   └── ChartCard.jsx                 # Carte graphique
+│   │   │
+│   │   ├── forms/                            # Composants formulaires
+│   │   │   ├── FormInput.jsx                 # Input
+│   │   │   ├── FormSelect.jsx                # Select
+│   │   │   ├── FormTextarea.jsx              # Textarea
+│   │   │   ├── FormDatePicker.jsx            # Date picker
+│   │   │   ├── FormMultiSelect.jsx           # Multi select
+│   │   │   └── FormCheckbox.jsx              # Checkbox
+│   │   │
+│   │   ├── calendar/                         # Emploi du temps
+│   │   │   ├── EmploiDuTemps.jsx            # Calendrier principal
+│   │   │   ├── EventCard.jsx                 # Carte événement
+│   │   │   └── CalendarLegend.jsx            # Légende
+│   │   │
+│   │   ├── editor/                           # Éditeur texte riche
+│   │   │   ├── RichTextEditor.jsx            # Éditeur TipTap
+│   │   │   └── EditorToolbar.jsx             # Barre d'outils
+│   │   │
+│   │   └── charts/                           # Graphiques
+│   │       ├── PieChart.jsx
+│   │       ├── BarChart.jsx
+│   │       └── LineChart.jsx
+│   │
+│   ├── lib/                                  # Logique métier
+│   │   ├── api/                             # Client API
+│   │   │   ├── client.js                     # Configuration fetch
+│   │   │   ├── endpoints.js                  # Tous les endpoints
+│   │   │   └── interceptors.js               # Gestion erreurs/token
+│   │   │
+│   │   ├── hooks/                           # Custom hooks
+│   │   │   ├── useAuth.js                    # Hook auth
+│   │   │   ├── useApi.js                     # Hook API générique
+│   │   │   ├── usePagination.js              # Hook pagination
+│   │   │   ├── useDebounce.js                # Hook debounce
+│   │   │   ├── useToast.js                   # Hook notifications
+│   │   │   └── useForm.js                    # Hook formulaires
+│   │   │
+│   │   ├── store/                           # State management (Zustand)
+│   │   │   ├── authStore.js                  # Store auth
+│   │   │   ├── uiStore.js                    # Store UI
+│   │   │   └── notificationStore.js          # Store notifications
+│   │   │
+│   │   ├── utils/                           # Utilitaires
+│   │   │   ├── cn.js                         # Merge classes CSS
+│   │   │   ├── format.js                     # Formatage dates/nombres
+│   │   │   ├── constants.js                  # Constantes
+│   │   │   ├── validators.js                 # Validations
+│   │   │   └── helpers.js                    # Helpers
+│   │   │
+│   │   └── styles/                          # Styles réutilisables
+│   │       └── common.js                     # Classes communes
+│   │
+│   └── middleware.js                         # Middleware Next.js
+│
+├── public/                                   # Fichiers statiques
+│   ├── images/
+│   │   └── logo.svg
+│   └── fonts/
+│
+├── .env.local                                # Variables d'environnement
+├── .env.example
+├── .gitignore
+├── .prettierrc                               # Config Prettier
+├── next.config.js                            # Config Next.js
+├── tailwind.config.js                        # Config Tailwind
+├── jsconfig.json                             # Config JavaScript
+├── package.json
+└── README.md
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🎯 Principes d'Architecture
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### 1. **Pas de Répétition (DRY)**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Tous les appels API dans `lib/api/endpoints.js`
+- Hooks réutilisables dans `lib/hooks/`
+- Composants génériques dans `components/shared/`
 
-## Learn More
+### 2. **Performance**
 
-To learn more about Next.js, take a look at the following resources:
+- Composants client (`'use client'`) uniquement quand nécessaire
+- Lazy loading des composants lourds
+- Cache avec Zustand pour éviter requêtes inutiles
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 3. **Maintenabilité**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Un fichier = Une responsabilité
+- Nomenclature claire et cohérente
+- Structure miroir des routes API backend
 
-## Deploy on Vercel
+### 4. **Responsive**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Mobile-first avec Tailwind
+- Sidebar collapsible
+- Tables scrollables horizontalement
