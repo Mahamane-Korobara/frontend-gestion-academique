@@ -3,13 +3,18 @@ import nextVitals from 'eslint-config-next/core-web-vitals';
 
 const eslintConfig = defineConfig([
   ...nextVitals,
-  // Override default ignores of eslint-config-next.
+  {
+    rules: {
+      // Cette règle prévient si j'oublies des variables ou des imports
+      'no-unused-vars': 'warn',
+    },
+  },
   globalIgnores([
-    // Default ignores of eslint-config-next:
     '.next/**',
     'out/**',
     'build/**',
     'next-env.d.ts',
+    'node_modules/**', // Ajoute node_modules par sécurité
   ]),
 ]);
 

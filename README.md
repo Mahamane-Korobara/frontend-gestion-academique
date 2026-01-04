@@ -161,8 +161,6 @@ frontend-gestion-academique/
 ├── .env.example
 ├── .gitignore
 ├── .prettierrc                               # Config Prettier
-├── next.config.js                            # Config Next.js
-├── tailwind.config.js                        # Config Tailwind
 ├── jsconfig.json                             # Config JavaScript
 ├── package.json
 └── README.md
