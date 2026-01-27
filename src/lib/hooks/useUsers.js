@@ -121,16 +121,101 @@ export const useUsers = () => {
         fetchUsers();
     }, [fetchUsers]);
 
+    // ============ OPÉRATIONS CRUD ============
+
+    /**
+     * Créer un nouvel utilisateur
+     */
+    const createUser = useCallback(async (userData) => {
+        try {
+            const response = await usersService.create(userData);
+            // Rafraîchir la liste après création
+            await refetch();
+            return response;
+        } catch (err) {
+            console.error('Erreur lors de la création:', err);
+            throw err;
+        }
+    }, [refetch]);
+
+    /**
+     * Mettre à jour un utilisateur
+     */
+    const updateUser = useCallback(async (userId, userData) => {
+        try {
+            const response = await usersService.update(userId, userData);
+            // Rafraîchir la liste après modification
+            await refetch();
+            return response;
+        } catch (err) {
+            console.error('Erreur lors de la modification:', err);
+            throw err;
+        }
+    }, [refetch]);
+
+    /**
+     * Supprimer un utilisateur
+     */
+    const deleteUser = useCallback(async (userId) => {
+        try {
+            const response = await usersService.delete(userId);
+            // Rafraîchir la liste après suppression
+            await refetch();
+            return response;
+        } catch (err) {
+            console.error('Erreur lors de la suppression:', err);
+            throw err;
+        }
+    }, [refetch]);
+
+    /**
+     * Réinitialiser le mot de passe d'un utilisateur
+     */
+    const resetPassword = useCallback(async (userId) => {
+        try {
+            const response = await usersService.resetPassword(userId);
+            return response;
+        } catch (err) {
+            console.error('Erreur lors de la réinitialisation du mot de passe:', err);
+            throw err;
+        }
+    }, []);
+
+    /**
+     * Activer/Désactiver un utilisateur
+     */
+    const toggleActive = useCallback(async (userId) => {
+        try {
+            const response = await usersService.toggleActive(userId);
+            // Rafraîchir la liste après changement de statut
+            await refetch();
+            return response;
+        } catch (err) {
+            console.error('Erreur lors du changement de statut:', err);
+            throw err;
+        }
+    }, [refetch]);
+
     return {
+        // État
         users,
         pagination,
         links,
         loading,
         error,
+
+        // Actions de base
         refetch,
         applyFilters,
         updatePagination,
         filters,
+
+        // Opérations CRUD
+        createUser,
+        updateUser,
+        deleteUser,
+        resetPassword,
+        toggleActive,
     };
 };
 
