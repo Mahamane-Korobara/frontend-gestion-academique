@@ -19,8 +19,9 @@ import UserForm from '@/components/UserForm';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import useModal from '@/lib/hooks/useModal';
 
-// Hook personnalisé
+// Hooks personnalisés
 import useUsers from '@/lib/hooks/useUsers';
+import useFilieres from '@/lib/hooks/useFilieres';
 
 export default function UtilisateursPage() {
   const [activeTab, setActiveTab] = useState('etudiant');
@@ -41,12 +42,18 @@ export default function UtilisateursPage() {
   // Hook pour récupérer et gérer les utilisateurs
   const {
     users,
-    loading,
+    loading: usersLoading,
     createUser,
     updateUser,
     deleteUser,
     resetPassword,
   } = useUsers();
+
+  // Hook pour récupérer les filières
+  const {
+    activeFilieresOptions,
+    loading: filieresLoading,
+  } = useFilieres();
 
   // Filtrer les données côté client
   const filteredData = useMemo(() => {
@@ -117,7 +124,6 @@ export default function UtilisateursPage() {
    */
   const handleView = (user) => {
     console.log('Voir détails:', user);
-    // TODO: Implémenter la vue détaillée ou naviguer vers /users/{id}
     toast.info('Affichage des détails en cours de développement');
   };
 
@@ -265,7 +271,7 @@ export default function UtilisateursPage() {
       label: 'STATUT',
       className: 'min-w-[100px] hidden sm:table-cell',
       render: (_, row) => (
-        <StatusBadge status={row.profile?.statut || '-'} />
+        <StatusBadge status={row.profile?.statut || '--'} />
       )
     },
     {
@@ -286,6 +292,44 @@ export default function UtilisateursPage() {
       )
     }
   ];
+
+  // Préparer les options de filtre selon l'onglet actif
+  const filterOptions = useMemo(() => {
+    if (activeTab === 'etudiant') {
+      return [
+        { 
+          key: 'filiere', 
+          placeholder: 'Filière',
+          options: activeFilieresOptions
+        },
+        { 
+          key: 'statut', 
+          placeholder: 'Statut', 
+          options: [
+            { value: 'actif', label: 'Actif' }, 
+            { value: 'inactif', label: 'Inactif' }
+          ] 
+        }
+      ];
+    } else {
+      // Pour les professeurs, on utilise aussi les filières comme "spécialité"
+      return [
+        { 
+          key: 'specialite', 
+          placeholder: 'Spécialité',
+          options: activeFilieresOptions
+        },
+        { 
+          key: 'statut', 
+          placeholder: 'Statut', 
+          options: [
+            { value: 'actif', label: 'Actif' }, 
+            { value: 'inactif', label: 'Inactif' }
+          ] 
+        }
+      ];
+    }
+  }, [activeTab, activeFilieresOptions]);
 
   return (
     <div>
@@ -317,25 +361,7 @@ export default function UtilisateursPage() {
         <TableFilters 
           searchPlaceholder="Nom ou matricule..."
           searchValue={searchQuery}
-          filters={[
-            { 
-              key: activeTab === 'etudiant' ? 'filiere' : 'specialite', 
-              placeholder: activeTab === 'etudiant' ? 'Filière' : 'Spécialité', 
-              options: [
-                { value: 'informatique', label: 'Informatique' },
-                { value: 'mathematiques', label: 'Mathématiques' },
-                { value: 'physique', label: 'Physique' }
-              ] 
-            },
-            { 
-              key: 'statut', 
-              placeholder: 'Statut', 
-              options: [
-                { value: 'actif', label: 'Actif' }, 
-                { value: 'inactif', label: 'Inactif' }
-              ] 
-            }
-          ]}
+          filters={filterOptions}
           selectedValues={selectedFilters}
           onSearchChange={setSearchQuery}
           onFilterChange={updateFilter}
@@ -361,7 +387,7 @@ export default function UtilisateursPage() {
               data={filteredData}
               itemsPerPage={10}
               title={null}
-              loading={loading}
+              loading={usersLoading || filieresLoading}
             />
           </div>
         </div>
@@ -378,6 +404,7 @@ export default function UtilisateursPage() {
         showCloseButton={!isSubmitting}
       >
         <UserForm
+          filieres={activeFilieresOptions}
           onSubmit={handleCreate}
           onCancel={createModal.close}
           loading={isSubmitting}
@@ -399,6 +426,7 @@ export default function UtilisateursPage() {
       >
         <UserForm
           user={selectedUser}
+          filieres={activeFilieresOptions}
           onSubmit={handleUpdate}
           onCancel={() => {
             editModal.close();
