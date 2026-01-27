@@ -68,12 +68,9 @@ class ApiClient {
 
         // Si erreur
         if (!response.ok) {
-            // Token expiré ou invalide
+            // Token expiré ou invalide - Nettoyer le localStorage mais laisser le composant gérer la redirection
             if (response.status === 401) {
                 this.removeToken();
-                if (typeof window !== 'undefined') {
-                    window.location.href = '/login';
-                }
             }
 
             throw {

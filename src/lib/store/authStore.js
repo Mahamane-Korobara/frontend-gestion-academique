@@ -14,6 +14,7 @@ const useAuthStore = create(
             token: null,
             isAuthenticated: false,
             isLoading: false,
+            isHydrated: false,
 
             // Actions
             /**
@@ -108,11 +109,15 @@ const useAuthStore = create(
                                 user,
                                 token,
                                 isAuthenticated: true,
+                                isHydrated: true,
                             });
                         } catch (error) {
                             console.error('Erreur hydratation auth:', error);
                             get().logout();
+                            set({ isHydrated: true });
                         }
+                    } else {
+                        set({ isHydrated: true });
                     }
                 }
             },

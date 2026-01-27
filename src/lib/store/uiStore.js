@@ -4,8 +4,6 @@ import { persist } from 'zustand/middleware';
 /**
  * Store pour gérer l'état de l'interface utilisateur
  * - Sidebar (ouvert/fermé)
- * - Theme (clair/sombre)
- * - Notifications sonneries
  * - Mobile (détecter si mobile ou non)
  * - Accessible partout dans l'app
  */
@@ -15,9 +13,6 @@ const useUIStore = create(
             // Sidebar
             sidebarOpen: true,
             sidebarCollapsed: false,
-
-            // Theme
-            theme: 'light',
 
             // Mobile
             isMobile: false,
@@ -33,28 +28,6 @@ const useUIStore = create(
 
             setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
 
-            // Actions Theme
-            toggleTheme: () =>
-                set((state) => {
-                    const newTheme = state.theme === 'light' ? 'dark' : 'light';
-
-                    // Appliquer le theme au document
-                    if (typeof window !== 'undefined') {
-                        document.documentElement.classList.toggle('dark', newTheme === 'dark');
-                    }
-
-                    return { theme: newTheme };
-                }),
-
-            setTheme: (theme) => {
-                // Appliquer le theme au document
-                if (typeof window !== 'undefined') {
-                    document.documentElement.classList.toggle('dark', theme === 'dark');
-                }
-
-                set({ theme });
-            },
-
             // Actions Mobile
             setIsMobile: (isMobile) => set({ isMobile }),
 
@@ -69,9 +42,8 @@ const useUIStore = create(
         }),
         {
             name: 'ui-storage',
-            // Ne persister que theme et sidebarCollapsed
+            // Ne persister que sidebarCollapsed (le thème n'existe plus)
             partialize: (state) => ({
-                theme: state.theme,
                 sidebarCollapsed: state.sidebarCollapsed,
             }),
         }

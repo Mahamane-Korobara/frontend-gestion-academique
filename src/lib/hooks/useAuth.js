@@ -21,6 +21,7 @@ export default function useAuth() {
         token,
         isAuthenticated,
         isLoading,
+        isHydrated,
         login: loginStore,
         logout: logoutStore,
         setLoading,
@@ -33,7 +34,7 @@ export default function useAuth() {
     // Hydrater le store au montage
     useEffect(() => {
         hydrate();
-    }, [hydrate]);
+    }, []);
 
     /**
      * Login utilisateur
@@ -147,6 +148,7 @@ export default function useAuth() {
         token,
         isAuthenticated,
         isLoading,
+        isHydrated,
 
         // Méthodes
         login,

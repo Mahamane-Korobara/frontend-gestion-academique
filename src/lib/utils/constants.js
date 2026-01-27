@@ -76,7 +76,7 @@ export const PUBLIC_ROUTES = ['/login', '/'];
 
 // Routes par rôle
 export const ROLE_ROUTES = {
-    [USER_ROLES.ADMIN]: '/admin/dashboard',
+    [USER_ROLES.ADMIN]: '/dashboard',
     [USER_ROLES.PROFESSEUR]: '/professeur/dashboard',
     [USER_ROLES.ETUDIANT]: '/etudiant/dashboard',
 };
