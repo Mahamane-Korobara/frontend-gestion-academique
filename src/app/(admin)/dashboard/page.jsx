@@ -27,13 +27,13 @@ export default function AdminDashboard() {
   const { resume, charts, academique, recentActivities, alerts, anneeAcademique } = dashboard;
 
   return (
-    <div className="p-6 space-y-6">
+    <div>
       <Header 
         title="Vue d'ensemble du tableau de bord" 
         description={`${anneeAcademique?.annee} - ${anneeAcademique?.semestre_actif}`}
       />
-
-      {/* Alertes avec appels à l'action */}
+      <main className="flex-1 p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6 overflow-y-auto">
+        {/* Alertes avec appels à l'action */}
       <DashboardAlerts alerts={alerts} />
 
       {/* Actions Rapides */}
@@ -52,6 +52,7 @@ export default function AdminDashboard() {
       {recentActivities && recentActivities.length > 0 && (
         <RecentActivity activities={recentActivities} />
       )}
+      </main>
     </div>
   );
 }
