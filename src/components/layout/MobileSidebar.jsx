@@ -12,7 +12,7 @@ export default function MobileSidebar() {
     <Sheet open={sidebarOpen} onOpenChange={toggleSidebar}>
       <SheetContent 
         side="left" 
-        className="p-0 w-64 border-none flex flex-col h-[100dvh]" // 100dvh est mieux pour mobile
+        className="p-0 w-64 border-none flex flex-col h-dvh" // 100dvh est mieux pour mobile
       >
         <SheetHeader className="sr-only">
           <SheetTitle>Navigation</SheetTitle>

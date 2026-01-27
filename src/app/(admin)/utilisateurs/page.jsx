@@ -9,14 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 
 // Composants réutilisables
-import UserAvatar from '@/components/UserAvatar';
-import StatusBadge from '@/components/StatusBadge';
-import InfoBadge from '@/components/InfoBadge';
-import UserActionsMenu from '@/components/UserActionsMenu';
-import TabNavigation from '@/components/TabNavigation';
-import Modal from '@/components/Modal';
-import UserForm from '@/components/UserForm';
-import DeleteConfirmModal from '@/components/DeleteConfirmModal';
+import UserAvatar from '@/components/layout/UserAvatar';
+import StatusBadge from '@/components/ui/StatusBadge';
+import InfoBadge from '@/components/ui/InfoBadge';
+import UserActionsMenu from '@/components/layout/UserActionsMenu';
+import TabNavigation from '@/components/partage/TabNavigation';
+import Modal from '@/components/partage/Modal';
+import UserForm from '@/components/forms/UserForm';
+import DeleteConfirmModal from '@/components/partage/DeleteConfirmModal';
 import useModal from '@/lib/hooks/useModal';
 
 // Hooks personnalisés

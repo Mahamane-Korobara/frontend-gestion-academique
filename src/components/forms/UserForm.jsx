@@ -360,7 +360,7 @@ export default function UserForm({
         <Button
           type="submit"
           disabled={loading}
-          className="min-w-[120px]"
+          className="min-w-30"
         >
           {loading ? (
             <>

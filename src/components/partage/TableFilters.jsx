@@ -42,7 +42,7 @@ export default function TableFilters({
         {(searchValue || Object.keys(selectedValues).length > 0) && (
           <button
             onClick={onReset}
-            className="sm:hidden flex-shrink-0 h-9 px-3 text-xs text-red-500 font-medium hover:text-red-600 hover:bg-red-50 transition-colors rounded-md flex items-center gap-1 border border-red-200"
+            className="sm:hidden shrink-0 h-9 px-3 text-xs text-red-500 font-medium hover:text-red-600 hover:bg-red-50 transition-colors rounded-md flex items-center gap-1 border border-red-200"
           >
             <X className="w-3 h-3" />
           </button>
@@ -66,7 +66,7 @@ export default function TableFilters({
                 value={selectedValues[filter.key] || ""}
                 onValueChange={(val) => onFilterChange?.(filter.key, val)}
               >
-                <SelectTrigger className="w-[130px] sm:w-[140px] bg-white text-xs h-9">
+                <SelectTrigger className="w-32.5 sm:w-35 bg-white text-xs h-9">
                   <SelectValue placeholder={filter.placeholder || filter.label} />
                 </SelectTrigger>
                 <SelectContent>
@@ -84,7 +84,7 @@ export default function TableFilters({
           {/* Bouton Reset - Desktop */}
           <button
             onClick={onReset}
-            className="hidden sm:flex text-xs sm:text-sm text-red-500 font-medium hover:text-red-600 hover:bg-red-50 transition-colors px-2 sm:px-3 py-1.5 rounded-md items-center gap-1 border border-red-200 flex-shrink-0"
+            className="hidden sm:flex text-xs sm:text-sm text-red-500 font-medium hover:text-red-600 hover:bg-red-50 transition-colors px-2 sm:px-3 py-1.5 rounded-md items-center gap-1 border border-red-200 shrink-0"
           >
             <X className="w-3 h-3" /> 
             <span className="hidden md:inline">Réinitialiser</span>
