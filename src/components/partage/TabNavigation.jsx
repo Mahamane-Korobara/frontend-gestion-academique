@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 
 /**
@@ -23,11 +24,12 @@ export default function TabNavigation({
         const isSelected = activeTab === tab.id;
         
         return (
-          <button
+          <Button
             key={tab.id}
             onClick={() => onTabChange?.(tab.id)}
+            variant="ghost"
             className={cn(
-              'pb-3 md:pb-4 text-xs sm:text-sm font-bold capitalize relative flex items-center gap-2 transition-all whitespace-nowrap flex-shrink-0',
+              'pb-3 md:pb-4 text-xs sm:text-sm font-bold capitalize relative flex items-center gap-2 transition-all whitespace-nowrap shrink-0 h-auto px-0',
               isSelected ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
             )}
           >
@@ -47,7 +49,7 @@ export default function TabNavigation({
             {isSelected && (
               <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 rounded-t-full" />
             )}
-          </button>
+          </Button>
         );
       })}
     </div>

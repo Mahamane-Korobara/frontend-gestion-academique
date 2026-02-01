@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 
 /**
@@ -142,15 +143,11 @@ export default function UserForm({
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             Nom complet <span className="text-red-500">*</span>
           </label>
-          <input
+          <Input
             type="text"
             value={formData.name}
             onChange={(e) => handleChange('name', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${
-              errors.name 
-                ? 'border-red-300 focus:ring-red-500' 
-                : 'border-gray-300 focus:ring-blue-500'
-            }`}
+            className={errors.name ? 'aria-invalid:border-destructive' : ''}
             placeholder="Ex: Jean Dupont"
           />
           {errors.name && (
@@ -163,15 +160,11 @@ export default function UserForm({
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             Adresse email <span className="text-red-500">*</span>
           </label>
-          <input
+          <Input
             type="email"
             value={formData.email}
             onChange={(e) => handleChange('email', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${
-              errors.email 
-                ? 'border-red-300 focus:ring-red-500' 
-                : 'border-gray-300 focus:ring-blue-500'
-            }`}
+            className={errors.email ? 'aria-invalid:border-destructive' : ''}
             placeholder="jean.dupont@exemple.com"
           />
           {errors.email && (
@@ -209,15 +202,11 @@ export default function UserForm({
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Matricule <span className="text-red-500">*</span>
               </label>
-              <input
+              <Input
                 type="text"
                 value={formData.matricule}
                 onChange={(e) => handleChange('matricule', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${
-                  errors.matricule 
-                    ? 'border-red-300 focus:ring-red-500' 
-                    : 'border-gray-300 focus:ring-blue-500'
-                }`}
+                className={errors.matricule ? 'aria-invalid:border-destructive' : ''}
                 placeholder="Ex: STU2025001"
               />
               {errors.matricule && (
@@ -284,15 +273,11 @@ export default function UserForm({
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Code Professeur <span className="text-red-500">*</span>
               </label>
-              <input
+              <Input
                 type="text"
                 value={formData.code}
                 onChange={(e) => handleChange('code', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${
-                  errors.code 
-                    ? 'border-red-300 focus:ring-red-500' 
-                    : 'border-gray-300 focus:ring-blue-500'
-                }`}
+                className={errors.code ? 'aria-invalid:border-destructive' : ''}
                 placeholder="Ex: PROF2025001"
               />
               {errors.code && (

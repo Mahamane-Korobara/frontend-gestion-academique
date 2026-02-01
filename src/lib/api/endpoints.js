@@ -229,6 +229,8 @@ export const annoncesEtudiantAPI = {
 // ============================================
 export const messagesAPI = {
     getAll: (params) => apiClient.get('/messages', params),
+    getSent: (params) => apiClient.get('/messages/sent', params),
+    getConversation: (userId) => apiClient.get(`/messages/conversation/${userId}`),
     getUnreadCount: () => apiClient.get('/messages/unread-count'),
     getById: (id) => apiClient.get(`/messages/${id}`),
     create: (data) => apiClient.post('/messages', data),

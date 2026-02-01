@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { Search, X, Filter } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -29,23 +31,25 @@ export default function TableFilters({
           <div className="absolute left-2.5 top-2.5 text-muted-foreground pointer-events-none">
             <Search className="h-4 w-4" />
           </div>
-          <input
+          <Input
             type="text"
             value={searchValue}
             placeholder={searchPlaceholder}
-            className="h-9 w-full rounded-md border border-input bg-transparent pl-9 pr-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="h-9 w-full pl-9 pr-3"
             onChange={(e) => onSearchChange?.(e.target.value)}
           />
         </div>
 
         {/* Bouton Reset (visible sur mobile si des filtres sont actifs) */}
         {(searchValue || Object.keys(selectedValues).length > 0) && (
-          <button
+          <Button
             onClick={onReset}
-            className="sm:hidden shrink-0 h-9 px-3 text-xs text-red-500 font-medium hover:text-red-600 hover:bg-red-50 transition-colors rounded-md flex items-center gap-1 border border-red-200"
+            variant="outline"
+            size="sm"
+            className="sm:hidden shrink-0 text-red-500 border-red-200 hover:text-red-600 hover:bg-red-50"
           >
             <X className="w-3 h-3" />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -82,13 +86,15 @@ export default function TableFilters({
           </div>
 
           {/* Bouton Reset - Desktop */}
-          <button
+          <Button
             onClick={onReset}
-            className="hidden sm:flex text-xs sm:text-sm text-red-500 font-medium hover:text-red-600 hover:bg-red-50 transition-colors px-2 sm:px-3 py-1.5 rounded-md items-center gap-1 border border-red-200 shrink-0"
+            variant="outline"
+            size="sm"
+            className="hidden sm:flex text-red-500 border-red-200 hover:text-red-600 hover:bg-red-50 shrink-0"
           >
             <X className="w-3 h-3" /> 
             <span className="hidden md:inline">Réinitialiser</span>
-          </button>
+          </Button>
         </div>
       )}
     </div>
