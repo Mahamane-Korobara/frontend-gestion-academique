@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
+import Link from 'next/link';
 
 // UI & Layout
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ import AnnoncesSection from '@/components/annonces/AnnoncesSection';
 import MessagerieSection from '@/components/annonces/MessagerieSection';
 import NotificationsSection from '@/components/annonces/NotificationsSection';
 import AnnonceViewModal from '@/components/annonces/AnnonceViewModal';
+import AnnonceEditModal from '@/components/annonces/AnnonceEditModal';
 
 // Hooks
 import useAnnonces from '@/lib/hooks/useAnnonces';
@@ -29,9 +31,9 @@ export default function AnnoncesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedAnnonce, setSelectedAnnonce] = useState(null);
 
-  const createModal = useModal();
   const viewModal = useModal();
   const deleteModal = useModal();
+  const editModal = useModal();
 
   const { annonces, loading, deleteAnnonce } = useAnnonces();
 
@@ -46,8 +48,7 @@ export default function AnnoncesPage() {
       const searchLower = searchQuery.toLowerCase();
       return (
         annonce.titre?.toLowerCase().includes(searchLower) || 
-        annonce.contenu?.toLowerCase().includes(searchLower) ||
-        annonce.cible.destinataire?.name?.toLowerCase().includes(searchLower) // Recherche par nom d'étudiant
+        annonce.contenu?.toLowerCase().includes(searchLower)
       );
     });
   }, [annonces, activeTab, searchQuery]);
@@ -99,13 +100,12 @@ export default function AnnoncesPage() {
           if (cible.type === 'filiere') return cible.filiere?.nom || 'Filière';
           if (cible.type === 'niveau') return `${cible.niveau?.nom || 'Niveau'} - ${cible.filiere?.nom || ''}`;
           if (cible.type === 'cours') return cible.cours?.titre || 'Cours';
-          if (cible.type === 'individuelle') return cible.destinataire?.name || 'Individuelle';
           return 'Non défini';
         };
         return (
           <InfoBadge 
             label={getCibleText(row.cible)} 
-            variant={row.cible.type === 'individuelle' ? 'gray' : 'blue'} 
+            variant="blue"
           />
         );
       }
@@ -125,6 +125,7 @@ export default function AnnoncesPage() {
           <AnnonceActionsMenu 
             annonce={row} 
             onView={(a) => { setSelectedAnnonce(a); viewModal.open(); }} 
+            onEdit={(a) => { setSelectedAnnonce(a); editModal.open(); }} 
             onDelete={(a) => { setSelectedAnnonce(a); deleteModal.open(); }} 
           />
         </div>
@@ -134,6 +135,7 @@ export default function AnnoncesPage() {
 
   // ============ MODAL CONTENT ============
   const viewModalContent = <AnnonceViewModal annonce={selectedAnnonce} />;
+  const editModalContent = <AnnonceEditModal annonce={selectedAnnonce} onClose={editModal.close} />;
 
   return (
     <ListPageLayout
@@ -141,17 +143,23 @@ export default function AnnoncesPage() {
       description="Gérez les annonces, les notifications et la messagerie interne."
       actionButton={
         activeMainSection === 'annonces' && (
-          <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={createModal.open}>
-            <Plus className="w-4 h-4 mr-2" /> Nouvelle Annonce
-          </Button>
+          <Link href="/annonces/nouveau">
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="w-4 h-4 mr-2" /> Nouvelle Annonce
+            </Button>
+          </Link>
         )
       }
       viewModal={viewModal}
+      editModal={editModal}
       deleteModal={deleteModal}
       isSubmitting={isSubmitting}
       selectedItem={selectedAnnonce}
       viewModalTitle="Détails de l'annonce"
       viewModalContent={viewModalContent}
+      editModalTitle="Modifier l'annonce"
+      editModalContent={editModalContent}
+      deleteModalItemName={selectedAnnonce?.titre || 'cette annonce'}
       onDeleteConfirm={handleConfirmDelete}
     >
       <TabNavigation
@@ -171,8 +179,7 @@ export default function AnnoncesPage() {
             { id: 'globale', label: 'Globale', count: annonces.filter(a => a.type.code === 'globale').length },
             { id: 'filiere', label: 'Par Filière', count: annonces.filter(a => a.type.code === 'filiere').length },
             { id: 'niveau', label: 'Par Niveau', count: annonces.filter(a => a.type.code === 'niveau').length },
-            { id: 'cours', label: 'Cours', count: annonces.filter(a => a.type.code === 'cours').length },
-            { id: 'individuelle', label: 'Individuelle', count: annonces.filter(a => a.type.code === 'individuelle').length }
+            { id: 'cours', label: 'Cours', count: annonces.filter(a => a.type.code === 'cours').length }
           ]}
           activeTab={activeTab}
           onTabChange={setActiveTab}

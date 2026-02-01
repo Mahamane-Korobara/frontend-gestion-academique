@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
+import FormInput from './FormInput';
+import FormSelect from './FormSelect';
 
 /**
  * Formulaire réutilisable pour créer ou modifier un utilisateur
@@ -139,54 +140,47 @@ export default function UserForm({
         </h3>
 
         {/* Nom */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Nom complet <span className="text-red-500">*</span>
-          </label>
-          <Input
-            type="text"
-            value={formData.name}
-            onChange={(e) => handleChange('name', e.target.value)}
-            className={errors.name ? 'aria-invalid:border-destructive' : ''}
-            placeholder="Ex: Jean Dupont"
-          />
-          {errors.name && (
-            <p className="mt-1 text-xs text-red-500">{errors.name}</p>
-          )}
-        </div>
+        <FormInput
+          id="name"
+          name="name"
+          label="Nom complet"
+          type="text"
+          value={formData.name}
+          onChange={(e) => handleChange('name', e.target.value)}
+          error={errors.name}
+          disabled={loading}
+          required
+          placeholder="Ex: Jean Dupont"
+        />
 
         {/* Email */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Adresse email <span className="text-red-500">*</span>
-          </label>
-          <Input
-            type="email"
-            value={formData.email}
-            onChange={(e) => handleChange('email', e.target.value)}
-            className={errors.email ? 'aria-invalid:border-destructive' : ''}
-            placeholder="jean.dupont@exemple.com"
-          />
-          {errors.email && (
-            <p className="mt-1 text-xs text-red-500">{errors.email}</p>
-          )}
-        </div>
+        <FormInput
+          id="email"
+          name="email"
+          label="Adresse email"
+          type="email"
+          value={formData.email}
+          onChange={(e) => handleChange('email', e.target.value)}
+          error={errors.email}
+          disabled={loading}
+          required
+          placeholder="jean.dupont@exemple.com"
+        />
 
         {/* Rôle */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Rôle <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={formData.role}
-            onChange={(e) => handleChange('role', e.target.value)}
-            disabled={isEditMode} // Ne pas changer le rôle en édition
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
-          >
-            <option value="etudiant">Étudiant</option>
-            <option value="professeur">Professeur</option>
-          </select>
-        </div>
+        <FormSelect
+          id="role"
+          label="Rôle"
+          value={formData.role}
+          onValueChange={(value) => handleChange('role', value)}
+          options={[
+            { value: 'etudiant', label: 'Étudiant' },
+            { value: 'professeur', label: 'Professeur' }
+          ]}
+          error={errors.role}
+          disabled={isEditMode || loading}
+          required
+        />
       </div>
 
       {/* Champs spécifiques au rôle */}
@@ -198,136 +192,96 @@ export default function UserForm({
         {formData.role === 'etudiant' ? (
           <>
             {/* Matricule */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Matricule <span className="text-red-500">*</span>
-              </label>
-              <Input
-                type="text"
-                value={formData.matricule}
-                onChange={(e) => handleChange('matricule', e.target.value)}
-                className={errors.matricule ? 'aria-invalid:border-destructive' : ''}
-                placeholder="Ex: STU2025001"
-              />
-              {errors.matricule && (
-                <p className="mt-1 text-xs text-red-500">{errors.matricule}</p>
-              )}
-            </div>
+            <FormInput
+              id="matricule"
+              name="matricule"
+              label="Matricule"
+              type="text"
+              value={formData.matricule}
+              onChange={(e) => handleChange('matricule', e.target.value)}
+              error={errors.matricule}
+              disabled={loading}
+              required
+              placeholder="Ex: STU2025001"
+            />
 
             {/* Filière */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Filière <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.filiere}
-                onChange={(e) => handleChange('filiere', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${
-                  errors.filiere 
-                    ? 'border-red-300 focus:ring-red-500' 
-                    : 'border-gray-300 focus:ring-blue-500'
-                }`}
-              >
-                <option value="">Sélectionner une filière</option>
-                {filieres.map((filiere) => (
-                  <option key={filiere.value} value={filiere.label}>
-                    {filiere.label}
-                  </option>
-                ))}
-              </select>
-              {errors.filiere && (
-                <p className="mt-1 text-xs text-red-500">{errors.filiere}</p>
-              )}
-            </div>
+            <FormSelect
+              id="filiere"
+              label="Filière"
+              value={formData.filiere}
+              onValueChange={(value) => handleChange('filiere', value)}
+              options={filieres.map(f => ({ value: f.label, label: f.label }))}
+              placeholder="Sélectionner une filière"
+              error={errors.filiere}
+              disabled={loading}
+              required
+            />
 
             {/* Niveau */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Niveau <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.niveau}
-                onChange={(e) => handleChange('niveau', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${
-                  errors.niveau 
-                    ? 'border-red-300 focus:ring-red-500' 
-                    : 'border-gray-300 focus:ring-blue-500'
-                }`}
-              >
-                <option value="">Sélectionner un niveau</option>
-                <option value="L1">L1</option>
-                <option value="L2">L2</option>
-                <option value="L3">L3</option>
-                <option value="M1">M1</option>
-                <option value="M2">M2</option>
-              </select>
-              {errors.niveau && (
-                <p className="mt-1 text-xs text-red-500">{errors.niveau}</p>
-              )}
-            </div>
+            <FormSelect
+              id="niveau"
+              label="Niveau"
+              value={formData.niveau}
+              onValueChange={(value) => handleChange('niveau', value)}
+              options={[
+                { value: 'L1', label: 'L1' },
+                { value: 'L2', label: 'L2' },
+                { value: 'L3', label: 'L3' },
+                { value: 'M1', label: 'M1' },
+                { value: 'M2', label: 'M2' }
+              ]}
+              placeholder="Sélectionner un niveau"
+              error={errors.niveau}
+              disabled={loading}
+              required
+            />
           </>
         ) : (
           <>
             {/* Code Professeur */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Code Professeur <span className="text-red-500">*</span>
-              </label>
-              <Input
-                type="text"
-                value={formData.code}
-                onChange={(e) => handleChange('code', e.target.value)}
-                className={errors.code ? 'aria-invalid:border-destructive' : ''}
-                placeholder="Ex: PROF2025001"
-              />
-              {errors.code && (
-                <p className="mt-1 text-xs text-red-500">{errors.code}</p>
-              )}
-            </div>
+            <FormInput
+              id="code"
+              name="code"
+              label="Code Professeur"
+              type="text"
+              value={formData.code}
+              onChange={(e) => handleChange('code', e.target.value)}
+              error={errors.code}
+              disabled={loading}
+              required
+              placeholder="Ex: PROF2025001"
+            />
 
             {/* Spécialité */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Spécialité <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.specialite}
-                onChange={(e) => handleChange('specialite', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${
-                  errors.specialite 
-                    ? 'border-red-300 focus:ring-red-500' 
-                    : 'border-gray-300 focus:ring-blue-500'
-                }`}
-              >
-                <option value="">Sélectionner une spécialité</option>
-                {filieres.map((filiere) => (
-                  <option key={filiere.value} value={filiere.label}>
-                    {filiere.label}
-                  </option>
-                ))}
-              </select>
-              {errors.specialite && (
-                <p className="mt-1 text-xs text-red-500">{errors.specialite}</p>
-              )}
-            </div>
+            <FormSelect
+              id="specialite"
+              label="Spécialité"
+              value={formData.specialite}
+              onValueChange={(value) => handleChange('specialite', value)}
+              options={filieres.map(f => ({ value: f.label, label: f.label }))}
+              placeholder="Sélectionner une spécialité"
+              error={errors.specialite}
+              disabled={loading}
+              required
+            />
 
             {/* Grade */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Grade
-              </label>
-              <select
-                value={formData.grade}
-                onChange={(e) => handleChange('grade', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-              >
-                <option value="">Sélectionner un grade</option>
-                <option value="Assistant">Assistant</option>
-                <option value="Maître assistant">Maître assistant</option>
-                <option value="Maître de conférences">Maître de conférences</option>
-                <option value="Professeur">Professeur</option>
-              </select>
-            </div>
+            <FormSelect
+              id="grade"
+              label="Grade"
+              value={formData.grade}
+              onValueChange={(value) => handleChange('grade', value)}
+              options={[
+                { value: 'Assistant', label: 'Assistant' },
+                { value: 'Maître assistant', label: 'Maître assistant' },
+                { value: 'Maître de conférences', label: 'Maître de conférences' },
+                { value: 'Professeur', label: 'Professeur' }
+              ]}
+              placeholder="Sélectionner un grade"
+              error={errors.grade}
+              disabled={loading}
+            />
           </>
         )}
       </div>

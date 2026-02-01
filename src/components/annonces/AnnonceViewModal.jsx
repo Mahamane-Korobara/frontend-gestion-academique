@@ -11,7 +11,6 @@ export default function AnnonceViewModal({ annonce }) {
     if (cible.type === 'filiere') return cible.filiere?.nom || 'Filière';
     if (cible.type === 'niveau') return `${cible.niveau?.nom || 'Niveau'} - ${cible.filiere?.nom || ''}`;
     if (cible.type === 'cours') return cible.cours?.titre || 'Cours';
-    if (cible.type === 'individuelle') return cible.destinataire?.name || 'Individuelle';
     return 'Non défini';
   };
 

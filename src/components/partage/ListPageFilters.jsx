@@ -5,6 +5,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import FormMultiSelect from '@/components/forms/FormMultiSelect';
 import TabNavigation from './TabNavigation';
 
 export default function ListPageFilters({
@@ -56,21 +57,18 @@ export default function ListPageFilters({
 
         {/* Filtres supplémentaires */}
         {filterOptions.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
             {filterOptions.map((filter) => (
-              <select
+              <FormMultiSelect
                 key={filter.key}
+                id={filter.key}
                 value={selectedFilters[filter.key] || ''}
-                onChange={(e) => onFilterChange?.(filter.key, e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">{filter.placeholder}</option>
-                {filter.options?.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(value) => onFilterChange?.(filter.key, value)}
+                options={filter.options || []}
+                placeholder={filter.placeholder}
+                getOptionLabel={(opt) => opt.label || opt}
+                getOptionValue={(opt) => opt.value || opt}
+              />
             ))}
           </div>
         )}

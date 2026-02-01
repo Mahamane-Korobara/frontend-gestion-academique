@@ -135,7 +135,19 @@ export const useAnnonces = () => {
             return response;
         } catch (err) {
             console.error('Erreur lors de la création:', err);
-            throw err;
+            // Créer une erreur lisible
+            const errorObj = new Error(
+                err?.message ||
+                err?.errors?.toString() ||
+                'Une erreur est survenue lors de la création de l\'annonce'
+            );
+            if (err?.errors) {
+                errorObj.validationErrors = err.errors;
+            }
+            if (err?.status) {
+                errorObj.status = err.status;
+            }
+            throw errorObj;
         }
     }, [refetch]);
 
@@ -145,7 +157,15 @@ export const useAnnonces = () => {
     const updateAnnonce = useCallback(async (annonceId, annonceData) => {
         try {
             const response = await annoncesService.update(annonceId, annonceData);
-            // Rafraîchir la liste après modification
+
+            // Mise à jour optimiste : mettre à jour l'état local immédiatement
+            setAnnonces((prevAnnonces) =>
+                prevAnnonces.map((annonce) =>
+                    annonce.id === annonceId ? { ...annonce, ...response.data } : annonce
+                )
+            );
+
+            // Rafraîchir la liste pour synchroniser complètement
             await refetch();
             return response;
         } catch (err) {
