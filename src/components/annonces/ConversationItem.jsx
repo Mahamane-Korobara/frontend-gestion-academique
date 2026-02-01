@@ -11,6 +11,9 @@ export default function ConversationItem({
   onClick,
   parseDate 
 }) {
+  // Normaliser le nom de l'utilisateur
+  const userName = conversation.user.nom || conversation.user.name || 'Utilisateur';
+
   return (
     <div
       onClick={onClick}
@@ -22,13 +25,13 @@ export default function ConversationItem({
       <div className="flex items-center gap-2 sm:gap-3">
         <Avatar className="w-10 h-10 sm:w-12 sm:h-12">
           <AvatarFallback className="bg-linear-to-br from-blue-400 to-blue-600 text-white font-bold text-sm sm:text-base">
-            {conversation.user.nom.charAt(0).toUpperCase()}
+            {userName.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
 
         <div className="flex-1 min-w-0">
           <h3 className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
-            {conversation.user.nom}
+            {userName}
           </h3>
           {lastMessage && (
             <>

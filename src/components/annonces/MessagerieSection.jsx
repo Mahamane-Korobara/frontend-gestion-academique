@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, Menu } from 'lucide-react';
+import { Search, Menu, Plus } from 'lucide-react';
 import { useMessages } from '@/lib/hooks/useMessages';
+import { useUsers } from '@/lib/hooks/useUsers';
 import useAuth from '@/lib/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,12 +15,23 @@ import ConversationItem from '@/components/annonces/ConversationItem';
 import ChatHeader from '@/components/annonces/ChatHeader';
 import MessageBubble from '@/components/annonces/MessageBubble';
 import MessageInput from '@/components/annonces/MessageInput';
+import NewConversationModal from '@/components/annonces/NewConversationModal';
 import {
   EmptyState,
   EmptyConversationState,
 } from '@/components/annonces/Empty';
-
 import { cn } from '@/lib/utils/cn';
+
+// Import des fonctions utilitaires
+import {
+  parseCustomDate,
+  buildConversations,
+  filterConversations,
+  getLastMessage,
+  getUnreadCount,
+  getUserDisplayName,
+  normalizeUser,
+} from '@/lib/utils/messageHelpers';
 
 export default function MessagerieSection() {
   const { 
@@ -33,6 +45,7 @@ export default function MessagerieSection() {
     fetchUnreadCount 
   } = useMessages();
   const { user } = useAuth();
+  const { users, loading: usersLoading, error: usersError } = useUsers();
   
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
@@ -41,60 +54,28 @@ export default function MessagerieSection() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [isNewConversationModalOpen, setIsNewConversationModalOpen] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Fonction pour parser les dates au format "DD/MM/YYYY HH:MM"
-  const parseDate = (dateString) => {
-    if (!dateString) return new Date();
-    const [datePart, timePart] = dateString.split(' ');
-    const [day, month, year] = datePart.split('/');
-    const [hours, minutes] = timePart ? timePart.split(':') : ['00', '00'];
-    return new Date(year, month - 1, day, hours, minutes);
-  };
+  // Filtrer les utilisateurs (exclure l'utilisateur connecté)
+  const availableUsers = users.filter((u) => u.id !== user?.id);
 
-  // Construire la liste des conversations
+  // Construire la liste des conversations (SIMPLIFIÉ)
   useEffect(() => {
-    const convMap = new Map();
+    if (!user?.id) return;
+    
+    const builtConversations = buildConversations(
+      messages, 
+      sentMessages, 
+      user.id, 
+      parseCustomDate
+    );
+    
+    setConversations(builtConversations);
+  }, [messages, sentMessages, user?.id]);
 
-    messages.forEach((msg) => {
-      const otherUser = msg.expediteur.id === user?.id ? msg.destinataire : msg.expediteur;
-      
-      if (!convMap.has(otherUser.id)) {
-        convMap.set(otherUser.id, {
-          userId: otherUser.id,
-          user: otherUser,
-        });
-      }
-    });
-
-    const convArray = Array.from(convMap.values()).sort((a, b) => {
-      const lastA = messages
-        .filter((m) => 
-          (m.expediteur.id === a.userId || m.destinataire.id === a.userId) &&
-          (m.expediteur.id === user?.id || m.destinataire.id === user?.id)
-        )
-        .sort((m1, m2) => parseDate(m2.created_at) - parseDate(m1.created_at))[0];
-      
-      const lastB = messages
-        .filter((m) => 
-          (m.expediteur.id === b.userId || m.destinataire.id === b.userId) &&
-          (m.expediteur.id === user?.id || m.destinataire.id === user?.id)
-        )
-        .sort((m1, m2) => parseDate(m2.created_at) - parseDate(m1.created_at))[0];
-
-      if (!lastA) return 1;
-      if (!lastB) return -1;
-      
-      return parseDate(lastB.created_at) - parseDate(lastA.created_at);
-    });
-
-    setConversations(convArray);
-  }, [messages, user?.id]);
-
-  // Filtrer les conversations
-  const filteredConversations = conversations.filter((conv) =>
-    conv.user.nom.toLowerCase().includes(searchText.toLowerCase())
-  );
+  // Filtrer les conversations (SIMPLIFIÉ)
+  const filteredConversations = filterConversations(conversations, searchText);
 
   // Auto-scroll vers le dernier message
   useEffect(() => {
@@ -144,26 +125,33 @@ export default function MessagerieSection() {
     }
   };
 
-  // Obtenir le dernier message
-  const getLastMessage = (conv) => {
-    const allMessages = [...messages, ...sentMessages];
-    const convMessages = allMessages.filter(
-      (m) =>
-        (m.expediteur.id === conv.userId || m.destinataire.id === conv.userId) &&
-        (m.expediteur.id === user?.id || m.destinataire.id === user?.id)
-    );
-    return convMessages.length > 0
-      ? convMessages.sort((a, b) => parseDate(b.created_at) - parseDate(a.created_at))[0]
-      : null;
-  };
+  // Gérer l'envoi d'un message à un nouvel utilisateur (SIMPLIFIÉ)
+  const handleSelectUserAndSendMessage = async (userId, messageContent) => {
+    try {
+      await createMessage({
+        destinataire_id: userId,
+        sujet: 'Message',
+        contenu: messageContent,
+      });
 
-  // Compter les messages non lus
-  const getUnreadCount = (conv) => {
-    return messages.filter(
-      (m) => m.destinataire.id === user?.id && 
-             m.expediteur.id === conv.userId && 
-             !m.is_lu
-    ).length;
+      await loadConversation(userId);
+      await fetchUnreadCount();
+
+      // Sélectionner la conversation (SIMPLIFIÉ avec normalizeUser)
+      const selectedUser = availableUsers.find((u) => u.id === userId);
+      if (selectedUser) {
+        setSelectedConversation({
+          userId: selectedUser.id,
+          user: normalizeUser(selectedUser),
+        });
+        setShowSidebar(false);
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Erreur lors de l\'envoi du message:', err);
+      throw err;
+    }
   };
 
   if (loading && conversations.length === 0) {
@@ -188,14 +176,25 @@ export default function MessagerieSection() {
           <div className="p-3 sm:p-4 border-b bg-white">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <h2 className="text-lg sm:text-xl font-bold text-gray-900">Messages</h2>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="md:hidden"
-                onClick={() => setShowSidebar(false)}
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="rounded-full p-2 hover:bg-gray-100"
+                  onClick={() => setIsNewConversationModalOpen(true)}
+                  title="Nouvelle conversation"
+                >
+                  <Plus className="w-5 h-5 text-gray-600" />
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="md:hidden"
+                  onClick={() => setShowSidebar(false)}
+                >
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </div>
             </div>
             
             {/* Barre de recherche */}
@@ -216,8 +215,15 @@ export default function MessagerieSection() {
             {filteredConversations.length > 0 ? (
               <div className="divide-y">
                 {filteredConversations.map((conv) => {
-                  const lastMsg = getLastMessage(conv);
-                  const unreadCount = getUnreadCount(conv);
+                  // SIMPLIFIÉ - Utilisation des fonctions utilitaires
+                  const lastMsg = getLastMessage(
+                    messages, 
+                    sentMessages, 
+                    conv.userId, 
+                    user?.id, 
+                    parseCustomDate
+                  );
+                  const unreadCount = getUnreadCount(messages, conv.userId, user?.id);
                   const isSelected = selectedConversation?.userId === conv.userId;
 
                   return (
@@ -229,7 +235,7 @@ export default function MessagerieSection() {
                       isSelected={isSelected}
                       currentUserId={user?.id}
                       onClick={() => handleSelectConversation(conv)}
-                      parseDate={parseDate}
+                      parseDate={parseCustomDate}
                     />
                   );
                 })}
@@ -254,7 +260,6 @@ export default function MessagerieSection() {
         >
           {selectedConversation ? (
             <>
-              {/* En-tête du chat */}
               <ChatHeader 
                 conversation={selectedConversation}
                 onBack={handleBackToList}
@@ -262,7 +267,6 @@ export default function MessagerieSection() {
 
               <Separator />
 
-              {/* Zone des messages */}
               {loadingConversation ? (
                 <div className="flex-1 flex items-center justify-center">
                   <LoadingSpinner />
@@ -276,8 +280,8 @@ export default function MessagerieSection() {
                           key={msg.id}
                           message={msg}
                           isOwn={msg.expediteur.id === user?.id}
-                          senderName={selectedConversation.user.nom}
-                          parseDate={parseDate}
+                          senderName={getUserDisplayName(selectedConversation.user)}
+                          parseDate={parseCustomDate}
                         />
                       ))
                     ) : (
@@ -290,7 +294,6 @@ export default function MessagerieSection() {
 
               <Separator />
 
-              {/* Zone de saisie */}
               <MessageInput
                 value={messageText}
                 onChange={setMessageText}
@@ -303,6 +306,16 @@ export default function MessagerieSection() {
           )}
         </div>
       </div>
+
+      {/* Modal pour créer une nouvelle conversation */}
+      <NewConversationModal
+        isOpen={isNewConversationModalOpen}
+        onClose={() => setIsNewConversationModalOpen(false)}
+        users={availableUsers}
+        usersLoading={usersLoading}
+        usersError={usersError}
+        onSelectUserAndSendMessage={handleSelectUserAndSendMessage}
+      />
     </Card>
   );
 }
