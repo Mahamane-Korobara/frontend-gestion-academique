@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, Edit, Mail, Lock, Trash2 } from 'lucide-react';
+import { Eye, Edit, MessageSquare, Lock, Trash2 } from 'lucide-react';
 import ActionsMenu from '@/components/partage/ActionsMenu';
 
 /**
@@ -8,7 +8,7 @@ import ActionsMenu from '@/components/partage/ActionsMenu';
  * @param {Object} user - Objet utilisateur
  * @param {Function} onView - Callback pour voir les détails
  * @param {Function} onEdit - Callback pour modifier
- * @param {Function} onSendEmail - Callback pour envoyer un email
+ * @param {Function} onSendMessage - Callback pour envoyer un message
  * @param {Function} onResetPassword - Callback pour réinitialiser le mot de passe
  * @param {Function} onDelete - Callback pour supprimer
  */
@@ -16,7 +16,7 @@ export default function UserActionsMenu({
   user,
   onView,
   onEdit,
-  onSendEmail,
+  onSendMessage,
   onResetPassword,
   onDelete,
 }) {
@@ -32,9 +32,9 @@ export default function UserActionsMenu({
       onClick: onEdit,
     },
     {
-      icon: Mail,
-      label: 'Envoyer un email',
-      onClick: onSendEmail,
+      icon: MessageSquare,
+      label: 'Envoyer un message',
+      onClick: onSendMessage,
     },
     {
       icon: Lock,

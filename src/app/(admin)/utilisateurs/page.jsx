@@ -11,6 +11,7 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import InfoBadge from '@/components/ui/InfoBadge';
 import UserActionsMenu from '@/components/layout/UserActionsMenu';
 import UserForm from '@/components/forms/UserForm';
+import NewConversationModal from '@/components/annonces/NewConversationModal';
 import useModal from '@/lib/hooks/useModal';
 import ListPageLayout from '@/components/partage/ListPageLayout';
 import ListPageFilters from '@/components/partage/ListPageFilters';
@@ -19,13 +20,27 @@ import DataTableSection from '@/components/partage/DataTableSection';
 // Hooks personnalisés
 import useUsers from '@/lib/hooks/useUsers';
 import useFilieres from '@/lib/hooks/useFilieres';
+import { useMessages } from '@/lib/hooks/useMessages';
+import { useModalOperations } from '@/lib/hooks/useModalOperations';
+
+// Utilitaires
+import {
+  getUserIdentifier,
+  getUserDepartment,
+  getUserStatus,
+  getRegistrationYear,
+  countUsersByRole,
+  filterUsers,
+  getFilterOptionsByRole
+} from '@/lib/utils/userHelpers';
 
 export default function UtilisateursPage() {
   const [activeTab, setActiveTab] = useState('etudiant');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilters, setSelectedFilters] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [messageModalUser, setMessageModalUser] = useState(null);
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
 
   // Modals
   const createModal = useModal();
@@ -34,28 +49,15 @@ export default function UtilisateursPage() {
 
   // Hooks
   const { users, loading: usersLoading, createUser, updateUser, deleteUser, resetPassword } = useUsers();
+  const { createMessage, loadConversation, fetchUnreadCount } = useMessages();
   const { activeFilieresOptions, loading: filieresLoading } = useFilieres();
+  
+  // Hook pour gérer les opérations avec modales (SIMPLIFIÉ)
+  const { isSubmitting, handleCreate, handleUpdate, handleDelete, handleSimpleOperation } = useModalOperations();
 
-  // Filtrer les données côté client
+  // Filtrer les données côté client (SIMPLIFIÉ)
   const filteredData = useMemo(() => {
-    return users.filter((user) => {
-      if (user.role.name === 'admin') return false;
-      if (user.role.name !== activeTab) return false;
-
-      const searchLower = searchQuery.toLowerCase();
-      const matchesSearch =
-        user.name.toLowerCase().includes(searchLower) ||
-        user.email.toLowerCase().includes(searchLower) ||
-        (user.profile?.matricule || user.profile?.code || '').toLowerCase().includes(searchLower);
-
-      const matchesFilters = Object.entries(selectedFilters).every(([key, value]) => {
-        if (!value || value === 'all') return true;
-        const profileValue = user.profile?.[key]?.toLowerCase();
-        return profileValue === value.toLowerCase();
-      });
-
-      return matchesSearch && matchesFilters;
-    });
+    return filterUsers(users, activeTab, searchQuery, selectedFilters);
   }, [users, activeTab, searchQuery, selectedFilters]);
 
   // Handlers
@@ -73,17 +75,14 @@ export default function UtilisateursPage() {
     setSelectedFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleCreate = async (formData) => {
-    setIsSubmitting(true);
-    try {
-      await createUser(formData);
-      toast.success('Utilisateur créé avec succès');
-      createModal.close();
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message || 'Erreur lors de la création');
-    } finally {
-      setIsSubmitting(false);
-    }
+  // CRUD Operations (SIMPLIFIÉ avec le hook)
+  const onCreateUser = (formData) => {
+    return handleCreate(
+      createUser,
+      formData,
+      createModal,
+      'Utilisateur créé avec succès'
+    );
   };
 
   const handleView = (user) => {
@@ -95,60 +94,83 @@ export default function UtilisateursPage() {
     editModal.open();
   };
 
-  const handleUpdate = async (formData) => {
-    if (!selectedUser) return;
-    setIsSubmitting(true);
-    try {
-      await updateUser(selectedUser.id, formData);
-      toast.success('Utilisateur modifié avec succès');
-      editModal.close();
-      setSelectedUser(null);
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message || 'Erreur lors de la modification');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const onUpdateUser = (formData) => {
+    return handleUpdate(
+      updateUser,
+      selectedUser.id,
+      formData,
+      editModal,
+      'Utilisateur modifié avec succès',
+      () => setSelectedUser(null)
+    );
   };
 
-  const handleDelete = (user) => {
+  const onDeleteUser = (user) => {
     setSelectedUser(user);
     deleteModal.open();
   };
 
-  const handleConfirmDelete = async () => {
-    if (!selectedUser) return;
-    setIsSubmitting(true);
-    try {
-      await deleteUser(selectedUser.id);
-      toast.success('Utilisateur supprimé avec succès');
-      deleteModal.close();
-      setSelectedUser(null);
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message || 'Erreur lors de la suppression');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleConfirmDelete = () => {
+    return handleDelete(
+      deleteUser,
+      selectedUser.id,
+      deleteModal,
+      'Utilisateur supprimé avec succès',
+      () => setSelectedUser(null)
+    );
   };
 
   const handleResetPassword = async (user) => {
-    try {
-      await resetPassword(user.id);
-      toast.success(`Email de réinitialisation envoyé à ${user.email}`);
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message || 'Erreur lors de la réinitialisation');
+    await handleSimpleOperation(
+      () => resetPassword(user.id),
+      `Email de réinitialisation envoyé à ${user.email}`,
+      'Erreur lors de la réinitialisation'
+    );
+  };
+
+  const handleSendMessage = (user) => {
+    setMessageModalUser(user);
+    setIsMessageModalOpen(true);
+  };
+
+  const handleSendMessageAndCreateConversation = async (userId, messageContent) => {
+    const result = await handleSimpleOperation(
+      async () => {
+        await createMessage({
+          destinataire_id: userId,
+          sujet: 'Message',
+          contenu: messageContent,
+        });
+        await loadConversation(userId);
+        await fetchUnreadCount();
+      },
+      'Message envoyé avec succès',
+      'Erreur lors de l\'envoi du message'
+    );
+
+    if (result.success) {
+      setIsMessageModalOpen(false);
+      setMessageModalUser(null);
     }
+
+    return result.success;
   };
 
-  const handleSendEmail = (user) => {
-    window.location.href = `mailto:${user.email}`;
-  };
-
-  // ============ CONFIGURATION ONGLETS ET COLONNES ============
+  // ============ CONFIGURATION ONGLETS (SIMPLIFIÉ) ============
   const tabs = [
-    { id: 'etudiant', label: 'Étudiants', count: users.filter(u => u.role.name === 'etudiant').length },
-    { id: 'professeur', label: 'Professeurs', count: users.filter(u => u.role.name === 'professeur').length }
+    { 
+      id: 'etudiant', 
+      label: 'Étudiants', 
+      count: countUsersByRole(users, 'etudiant') 
+    },
+    { 
+      id: 'professeur', 
+      label: 'Professeurs', 
+      count: countUsersByRole(users, 'professeur') 
+    }
   ];
 
+  // ============ CONFIGURATION COLONNES (SIMPLIFIÉ) ============
   const columns = [
     { 
       key: 'user-identity', 
@@ -158,8 +180,12 @@ export default function UtilisateursPage() {
         <div className="flex items-center gap-3 py-1">
           <UserAvatar name={row.name} variant="blue" />
           <div className="flex flex-col min-w-0">
-            <span className="font-bold text-sm text-gray-800 tracking-tight truncate">{row.name}</span>
-            <span className="text-[10px] text-gray-400 uppercase font-medium">Inscrit en {new Date(row.created_at).getFullYear() || '2025'}</span>
+            <span className="font-bold text-sm text-gray-800 tracking-tight truncate">
+              {row.name}
+            </span>
+            <span className="text-[10px] text-gray-400 uppercase font-medium">
+              Inscrit en {getRegistrationYear(row)}
+            </span>
           </div>
         </div>
       )
@@ -170,7 +196,9 @@ export default function UtilisateursPage() {
       className: 'min-w-[180px] hidden md:table-cell',
       render: (_, row) => (
         <div className="flex flex-col min-w-0">
-          <span className="text-sm font-semibold text-gray-700 truncate">{row.profile?.matricule || row.profile?.code || 'N/A'}</span>
+          <span className="text-sm font-semibold text-gray-700 truncate">
+            {getUserIdentifier(row)}
+          </span>
           <span className="text-xs text-gray-400 truncate">{row.email}</span>
         </div>
       )
@@ -180,7 +208,7 @@ export default function UtilisateursPage() {
       label: 'DÉPARTEMENT',
       className: 'min-w-[140px] hidden lg:table-cell',
       render: (_, row) => (
-        <InfoBadge label={row.profile?.filiere || row.profile?.specialite || 'Non défini'} variant="blue" />
+        <InfoBadge label={getUserDepartment(row)} variant="blue" />
       )
     },
     { 
@@ -188,7 +216,7 @@ export default function UtilisateursPage() {
       label: 'STATUT',
       className: 'min-w-[100px] hidden sm:table-cell',
       render: (_, row) => (
-        <StatusBadge status={row.profile?.statut || '--'} />
+        <StatusBadge status={getUserStatus(row)} />
       )
     },
     {
@@ -197,23 +225,22 @@ export default function UtilisateursPage() {
       className: 'w-[80px]',
       render: (_, row) => (
         <div className="flex justify-end">
-          <UserActionsMenu user={row} onView={handleView} onEdit={handleEdit} onSendEmail={handleSendEmail} onResetPassword={handleResetPassword} onDelete={handleDelete} />
+          <UserActionsMenu 
+            user={row} 
+            onView={handleView} 
+            onEdit={handleEdit} 
+            onSendMessage={handleSendMessage} 
+            onResetPassword={handleResetPassword} 
+            onDelete={onDeleteUser} 
+          />
         </div>
       )
     }
   ];
 
+  // Options de filtres (SIMPLIFIÉ)
   const filterOptions = useMemo(() => {
-    if (activeTab === 'etudiant') {
-      return [
-        { key: 'filiere', placeholder: 'Filière', options: activeFilieresOptions },
-        { key: 'statut', placeholder: 'Statut', options: [{ value: 'actif', label: 'Actif' }, { value: 'inactif', label: 'Inactif' }] }
-      ];
-    }
-    return [
-      { key: 'specialite', placeholder: 'Spécialité', options: activeFilieresOptions },
-      { key: 'statut', placeholder: 'Statut', options: [{ value: 'actif', label: 'Actif' }, { value: 'inactif', label: 'Inactif' }] }
-    ];
+    return getFilterOptionsByRole(activeTab, activeFilieresOptions);
   }, [activeTab, activeFilieresOptions]);
 
   return (
@@ -235,13 +262,27 @@ export default function UtilisateursPage() {
       createModalTitle="Créer un nouvel utilisateur"
       createModalDescription="Remplissez les informations ci-dessous pour créer un nouveau compte."
       createModalContent={
-        <UserForm filieres={activeFilieresOptions} onSubmit={handleCreate} onCancel={createModal.close} loading={isSubmitting} />
+        <UserForm 
+          filieres={activeFilieresOptions} 
+          onSubmit={onCreateUser} 
+          onCancel={createModal.close} 
+          loading={isSubmitting} 
+        />
       }
       editModalTitle="Modifier l'utilisateur"
       editModalDescription="Mettez à jour les informations de l'utilisateur."
       editModalContent={
         selectedUser && (
-          <UserForm user={selectedUser} filieres={activeFilieresOptions} onSubmit={handleUpdate} onCancel={() => { editModal.close(); setSelectedUser(null); }} loading={isSubmitting} />
+          <UserForm 
+            user={selectedUser} 
+            filieres={activeFilieresOptions} 
+            onSubmit={onUpdateUser} 
+            onCancel={() => { 
+              editModal.close(); 
+              setSelectedUser(null); 
+            }} 
+            loading={isSubmitting} 
+          />
         )
       }
       deleteModalItemName={selectedUser?.name}
@@ -266,6 +307,20 @@ export default function UtilisateursPage() {
         data={filteredData}
         loading={usersLoading || filieresLoading}
         count={filteredData.length}
+      />
+
+      {/* Modal pour envoyer un message */}
+      <NewConversationModal
+        isOpen={isMessageModalOpen}
+        onClose={() => {
+          setIsMessageModalOpen(false);
+          setMessageModalUser(null);
+        }}
+        users={messageModalUser ? [messageModalUser] : []}
+        usersLoading={false}
+        usersError={null}
+        initialUserId={messageModalUser?.id}
+        onSelectUserAndSendMessage={handleSendMessageAndCreateConversation}
       />
     </ListPageLayout>
   );

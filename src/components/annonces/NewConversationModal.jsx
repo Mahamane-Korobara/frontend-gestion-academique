@@ -22,12 +22,24 @@ export default function NewConversationModal({
   users = [],
   usersLoading = false,
   usersError = null,
+  initialUserId = null,
   onSelectUserAndSendMessage,
 }) {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [messageContent, setMessageContent] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // Pré-remplir avec l'utilisateur initial ou le seul utilisateur disponible
+  useEffect(() => {
+    if (isOpen) {
+      if (initialUserId) {
+        setSelectedUserId(initialUserId.toString());
+      } else if (users.length === 1) {
+        setSelectedUserId(users[0].id.toString());
+      }
+    }
+  }, [isOpen, initialUserId, users]);
 
   // Réinitialiser le formulaire à la fermeture
   useEffect(() => {

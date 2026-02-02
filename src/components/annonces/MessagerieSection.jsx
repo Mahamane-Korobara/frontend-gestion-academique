@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, Menu, Plus } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { useMessages } from '@/lib/hooks/useMessages';
 import { useUsers } from '@/lib/hooks/useUsers';
 import useAuth from '@/lib/hooks/useAuth';
@@ -176,25 +176,15 @@ export default function MessagerieSection() {
           <div className="p-3 sm:p-4 border-b bg-white">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <h2 className="text-lg sm:text-xl font-bold text-gray-900">Messages</h2>
-              <div className="flex items-center gap-2">
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="rounded-full p-2 hover:bg-gray-100"
-                  onClick={() => setIsNewConversationModalOpen(true)}
-                  title="Nouvelle conversation"
-                >
-                  <Plus className="w-5 h-5 text-gray-600" />
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="md:hidden"
-                  onClick={() => setShowSidebar(false)}
-                >
-                  <Menu className="w-5 h-5" />
-                </Button>
-              </div>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="rounded-full p-2 hover:bg-gray-100"
+                onClick={() => setIsNewConversationModalOpen(true)}
+                title="Nouvelle conversation"
+              >
+                <Plus className="w-5 h-5 text-gray-600" />
+              </Button>
             </div>
             
             {/* Barre de recherche */}

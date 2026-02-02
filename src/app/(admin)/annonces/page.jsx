@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 
@@ -13,7 +12,7 @@ import InfoBadge from '@/components/ui/InfoBadge';
 import StatusBadge from '@/components/ui/StatusBadge';
 import AnnonceActionsMenu from '@/components/partage/AnnonceActionsMenu';
 
-// Nouveaux Composants de Section
+// Composants de Section
 import AnnoncesSection from '@/components/annonces/AnnoncesSection';
 import MessagerieSection from '@/components/annonces/MessagerieSection';
 import NotificationsSection from '@/components/annonces/NotificationsSection';
@@ -23,12 +22,23 @@ import AnnonceEditModal from '@/components/annonces/AnnonceEditModal';
 // Hooks
 import useAnnonces from '@/lib/hooks/useAnnonces';
 import useModal from '@/lib/hooks/useModal';
+import { useModalOperations } from '@/lib/hooks/useModalOperations';
+
+// Helpers
+import {
+  getPriorityIcon,
+  getCibleText,
+  filterAnnonces,
+  countAnnoncesByType,
+  getAnnonceStats,
+  getAnnonceStatusLabel,
+  getAnnonceStatusVariant
+} from '@/lib/utils/annonceHelpers';
 
 export default function AnnoncesPage() {
   const [activeTab, setActiveTab] = useState('globale');
   const [activeMainSection, setActiveMainSection] = useState('annonces');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedAnnonce, setSelectedAnnonce] = useState(null);
 
   const viewModal = useModal();
@@ -36,45 +46,27 @@ export default function AnnoncesPage() {
   const editModal = useModal();
 
   const { annonces, loading, deleteAnnonce } = useAnnonces();
+  const { isSubmitting, handleDelete } = useModalOperations();
 
-  // ============ LOGIQUE DE DONNÉES ============
-  const stats = useMemo(() => ({
-    totalEnvoyees: annonces.filter(a => a.is_active).length
-  }), [annonces]);
+  // ============ LOGIQUE DE DONNÉES (SIMPLIFIÉE) ============
+  const stats = useMemo(() => getAnnonceStats(annonces), [annonces]);
 
   const filteredData = useMemo(() => {
-    return annonces.filter((annonce) => {
-      if (activeTab !== 'all' && annonce.type.code !== activeTab) return false;
-      const searchLower = searchQuery.toLowerCase();
-      return (
-        annonce.titre?.toLowerCase().includes(searchLower) || 
-        annonce.contenu?.toLowerCase().includes(searchLower)
-      );
-    });
+    return filterAnnonces(annonces, activeTab, searchQuery);
   }, [annonces, activeTab, searchQuery]);
 
-  // ============ HANDLERS ============
-  const handleConfirmDelete = async () => {
-    if (!selectedAnnonce) return;
-    setIsSubmitting(true);
-    try {
-      await deleteAnnonce(selectedAnnonce.id);
-      toast.success('Annonce supprimée');
-      deleteModal.close();
-      setSelectedAnnonce(null);
-    } catch (error) {
-      toast.error(error.message || 'Erreur lors de la suppression');
-    } finally {
-      setIsSubmitting(false);
-    }
+  // ============ HANDLERS (SIMPLIFIÉS) ============
+  const handleConfirmDelete = () => {
+    return handleDelete(
+      deleteAnnonce,
+      selectedAnnonce.id,
+      deleteModal,
+      'Annonce supprimée avec succès',
+      () => setSelectedAnnonce(null)
+    );
   };
 
-  // ============ HELPERS RENDU ============
-  const getPriorityIcon = (priorite) => {
-    const icons = { urgente: '⚠️', importante: '📢', normale: 'ℹ️' };
-    return icons[priorite?.code] || '📌';
-  };
-
+  // ============ HELPERS RENDU (SIMPLIFIÉS) ============
   const columns = [
     {
       key: 'annonce-sujet',
@@ -82,7 +74,9 @@ export default function AnnoncesPage() {
       className: 'min-w-[280px]',
       render: (_, row) => (
         <div className="flex items-start gap-3 py-2">
-          <div className="shrink-0 w-8 h-8 flex items-center justify-center text-xl">{getPriorityIcon(row.priorite)}</div>
+          <div className="shrink-0 w-8 h-8 flex items-center justify-center text-xl">
+            {getPriorityIcon(row.priorite)}
+          </div>
           <div className="flex flex-col min-w-0">
             <span className="font-bold text-sm text-gray-800 truncate">{row.titre}</span>
             <span className="text-xs text-gray-500 truncate line-clamp-1">{row.contenu}</span>
@@ -94,27 +88,23 @@ export default function AnnoncesPage() {
       key: 'annonce-cible',
       label: 'CIBLE',
       className: 'min-w-[140px] hidden md:table-cell',
-      render: (_, row) => {
-        const getCibleText = (cible) => {
-          if (cible.type === 'globale') return 'Globale';
-          if (cible.type === 'filiere') return cible.filiere?.nom || 'Filière';
-          if (cible.type === 'niveau') return `${cible.niveau?.nom || 'Niveau'} - ${cible.filiere?.nom || ''}`;
-          if (cible.type === 'cours') return cible.cours?.titre || 'Cours';
-          return 'Non défini';
-        };
-        return (
-          <InfoBadge 
-            label={getCibleText(row.cible)} 
-            variant="blue"
-          />
-        );
-      }
+      render: (_, row) => (
+        <InfoBadge 
+          label={getCibleText(row.cible)} 
+          variant="blue"
+        />
+      )
     },
     {
       key: 'annonce-statut',
       label: 'STATUT',
       className: 'min-w-[100px] hidden sm:table-cell',
-      render: (_, row) => <StatusBadge status={row.is_active ? 'Envoyé' : 'Brouillon'} variant={row.is_active ? 'success' : 'warning'} />
+      render: (_, row) => (
+        <StatusBadge 
+          status={getAnnonceStatusLabel(row.is_active)} 
+          variant={getAnnonceStatusVariant(row.is_active)} 
+        />
+      )
     },
     {
       key: 'annonce-actions',
@@ -176,10 +166,10 @@ export default function AnnoncesPage() {
         <AnnoncesSection 
           stats={stats}
           tabs={[
-            { id: 'globale', label: 'Globale', count: annonces.filter(a => a.type.code === 'globale').length },
-            { id: 'filiere', label: 'Par Filière', count: annonces.filter(a => a.type.code === 'filiere').length },
-            { id: 'niveau', label: 'Par Niveau', count: annonces.filter(a => a.type.code === 'niveau').length },
-            { id: 'cours', label: 'Cours', count: annonces.filter(a => a.type.code === 'cours').length }
+            { id: 'globale', label: 'Globale', count: countAnnoncesByType(annonces, 'globale') },
+            { id: 'filiere', label: 'Par Filière', count: countAnnoncesByType(annonces, 'filiere') },
+            { id: 'niveau', label: 'Par Niveau', count: countAnnoncesByType(annonces, 'niveau') },
+            { id: 'cours', label: 'Cours', count: countAnnoncesByType(annonces, 'cours') }
           ]}
           activeTab={activeTab}
           onTabChange={setActiveTab}
