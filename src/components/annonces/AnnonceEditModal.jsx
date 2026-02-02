@@ -9,15 +9,19 @@ import { Button } from '@/components/ui/button';
 import FormInput from '@/components/forms/FormInput';
 import FormTextarea from '@/components/forms/FormTextarea';
 import FormSelect from '@/components/forms/FormSelect';
-import ErrorAlert from '@/components/partage/ErrorAlert';
 
 // Hooks et Services
 import useAnnounceFormOptions from '@/lib/hooks/useAnnounceFormOptions';
 import useAnnonces from '@/lib/hooks/useAnnonces';
+import useAuth from '@/lib/hooks/useAuth';
 
 export default function AnnonceEditModal({ annonce, onClose }) {
+  const { user } = useAuth();
   const { updateAnnonce } = useAnnonces();
   const { filieres, niveaux, cours, loading: optionsLoading } = useAnnounceFormOptions();
+  
+  // Déterminer si l'utilisateur est un professeur
+  const isProfesseur = user?.role?.name === 'professeur';
 
   const [formData, setFormData] = useState({
     titre: '',
@@ -33,13 +37,32 @@ export default function AnnonceEditModal({ annonce, onClose }) {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Options de type selon le rôle
+  const typeOptions = isProfesseur
+    ? [
+        { value: 'filiere', label: 'Par Filière' },
+        { value: 'niveau', label: 'Par Niveau' },
+        { value: 'cours', label: 'Par Cours' }
+      ]
+    : [
+        { value: 'globale', label: 'Globale' },
+        { value: 'filiere', label: 'Par Filière' },
+        { value: 'niveau', label: 'Par Niveau' },
+        { value: 'cours', label: 'Par Cours' }
+      ];
+
   // Initialiser le formulaire avec les données de l'annonce
   useEffect(() => {
     if (annonce) {
+      const initialType = annonce.type?.code || 'globale';
+      
+      // Si professeur et type est 'globale', forcer 'filiere'
+      const safeType = isProfesseur && initialType === 'globale' ? 'filiere' : initialType;
+      
       setFormData({
         titre: annonce.titre || '',
         contenu: annonce.contenu || '',
-        type: annonce.type?.code || 'globale',
+        type: safeType,
         filiere_id: annonce.cible?.filiere_id?.toString() || '',
         niveau_id: annonce.cible?.niveau_id?.toString() || '',
         cours_id: annonce.cible?.cours_id?.toString() || '',
@@ -47,7 +70,7 @@ export default function AnnonceEditModal({ annonce, onClose }) {
         date_expiration: annonce.date_expiration || '',
       });
     }
-  }, [annonce]);
+  }, [annonce, isProfesseur]);
 
   // Valider le formulaire
   const validateForm = () => {
@@ -65,6 +88,11 @@ export default function AnnonceEditModal({ annonce, onClose }) {
 
     if (!formData.type) {
       newErrors.type = 'Le type d\'annonce est requis';
+    }
+
+    // Validation supplémentaire pour les professeurs
+    if (isProfesseur && formData.type === 'globale') {
+      newErrors.type = 'Les professeurs ne peuvent pas créer d\'annonces globales';
     }
 
     if (!formData.priorite) {
@@ -134,6 +162,12 @@ export default function AnnonceEditModal({ annonce, onClose }) {
 
   // Handler de changement du type d'annonce
   const handleTypeChange = (value) => {
+    // Empêcher les professeurs de sélectionner 'globale'
+    if (isProfesseur && value === 'globale') {
+      toast.error('Les professeurs ne peuvent pas créer d\'annonces globales');
+      return;
+    }
+
     // Réinitialiser les champs conditionnels
     setFormData((prev) => ({
       ...prev,
@@ -185,7 +219,6 @@ export default function AnnonceEditModal({ annonce, onClose }) {
         dataToSubmit.cours_id = parseInt(formData.cours_id);
       }
 
-    //   console.log('Données envoyées au backend:', dataToSubmit);
       await updateAnnonce(annonce.id, dataToSubmit);
       toast.success('Annonce modifiée avec succès');
       
@@ -214,6 +247,15 @@ export default function AnnonceEditModal({ annonce, onClose }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Message d'information pour les professeurs */}
+      {isProfesseur && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-800">
+            En tant que professeur, vous ne pouvez créer que des annonces ciblées (filière, niveau, cours).
+          </p>
+        </div>
+      )}
+
       {/* Titre */}
       <FormInput
         id="titre"
@@ -254,12 +296,7 @@ export default function AnnonceEditModal({ annonce, onClose }) {
           label="Type d'annonce"
           value={formData.type}
           onValueChange={handleTypeChange}
-          options={[
-            { value: 'globale', label: 'Globale' },
-            { value: 'filiere', label: 'Par Filière' },
-            { value: 'niveau', label: 'Par Niveau' },
-            { value: 'cours', label: 'Par Cours' }
-          ]}
+          options={typeOptions}
           error={errors.type}
           disabled={isSubmitting || optionsLoading}
           required

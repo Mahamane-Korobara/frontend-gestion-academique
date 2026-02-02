@@ -16,17 +16,22 @@ import ErrorAlert from '@/components/partage/ErrorAlert';
 // Hooks & Services
 import useAnnounceFormOptions from '@/lib/hooks/useAnnounceFormOptions';
 import useAnnonces from '@/lib/hooks/useAnnonces';
+import useAuth from '@/lib/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 
 export default function AnnonceForm() {
   const router = useRouter();
+  const { user } = useAuth();
   const { createAnnonce } = useAnnonces();
   const { filieres, niveaux, cours, loading: optionsLoading, error: optionsError } = useAnnounceFormOptions();
+
+  // Déterminer si l'utilisateur est un professeur
+  const isProfesseur = user?.role?.name === 'professeur';
 
   const [formData, setFormData] = useState({
     titre: '',
     contenu: '',
-    type: 'globale',
+    type: isProfesseur ? 'filiere' : 'globale', // Type par défaut selon le rôle
     filiere_id: '',
     niveau_id: '',
     cours_id: '',
@@ -36,6 +41,20 @@ export default function AnnonceForm() {
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Options de type selon le rôle
+  const typeOptions = isProfesseur
+    ? [
+        { value: 'filiere', label: 'Par Filière' },
+        { value: 'niveau', label: 'Par Niveau' },
+        { value: 'cours', label: 'Par Cours' }
+      ]
+    : [
+        { value: 'globale', label: 'Globale' },
+        { value: 'filiere', label: 'Par Filière' },
+        { value: 'niveau', label: 'Par Niveau' },
+        { value: 'cours', label: 'Par Cours' }
+      ];
 
   // Valider le formulaire
   const validateForm = () => {
@@ -53,6 +72,11 @@ export default function AnnonceForm() {
 
     if (!formData.type) {
       newErrors.type = 'Le type d\'annonce est requis';
+    }
+
+    // Validation supplémentaire pour les professeurs
+    if (isProfesseur && formData.type === 'globale') {
+      newErrors.type = 'Les professeurs ne peuvent pas créer d\'annonces globales';
     }
 
     if (!formData.priorite) {
@@ -122,6 +146,12 @@ export default function AnnonceForm() {
 
   // Handler de changement du type d'annonce
   const handleTypeChange = (value) => {
+    // Empêcher les professeurs de sélectionner 'globale'
+    if (isProfesseur && value === 'globale') {
+      toast.error('Les professeurs ne peuvent pas créer d\'annonces globales');
+      return;
+    }
+
     // Réinitialiser les champs conditionnels
     setFormData((prev) => ({
       ...prev,
@@ -173,7 +203,6 @@ export default function AnnonceForm() {
         dataToSubmit.cours_id = parseInt(formData.cours_id);
       }
 
-    //   console.log('📤 Données envoyées au backend:', dataToSubmit);
       await createAnnonce(dataToSubmit);
       toast.success('Annonce créée avec succès');
       router.push('/annonces');
@@ -205,10 +234,36 @@ export default function AnnonceForm() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Nouvelle Annonce</h1>
-            <p className="text-gray-600 mt-1">Créez et publiez une nouvelle annonce</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Nouvelle Annonce
+              {isProfesseur && (
+                <span className="ml-2 text-base font-normal text-gray-600">
+                  (Professeur)
+                </span>
+              )}
+            </h1>
+            <p className="text-gray-600 mt-1">
+              {isProfesseur 
+                ? 'Créez une annonce ciblée pour vos classes'
+                : 'Créez et publiez une nouvelle annonce'
+              }
+            </p>
           </div>
         </div>
+
+        {/* Message d'information pour les professeurs */}
+        {isProfesseur && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-blue-900 mb-2">
+              Informations importantes
+            </h3>
+            <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+              <li>Vous ne pouvez créer que des annonces ciblées</li>
+              <li>Types disponibles : Filière, Niveau, Cours</li>
+              <li>Les annonces globales sont réservées aux administrateurs</li>
+            </ul>
+          </div>
+        )}
 
         {/* Erreur de chargement des options */}
         {optionsError && (
@@ -268,12 +323,7 @@ export default function AnnonceForm() {
                   label="Type d'annonce"
                   value={formData.type}
                   onValueChange={handleTypeChange}
-                  options={[
-                    { value: 'globale', label: 'Globale' },
-                    { value: 'filiere', label: 'Par Filière' },
-                    { value: 'niveau', label: 'Par Niveau' },
-                    { value: 'cours', label: 'Par Cours' }
-                  ]}
+                  options={typeOptions}
                   error={errors.type}
                   disabled={isSubmitting || optionsLoading}
                   required

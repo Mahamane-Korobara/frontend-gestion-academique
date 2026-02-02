@@ -10,45 +10,65 @@ import ListPageLayout from '@/components/partage/ListPageLayout';
 import TabNavigation from '@/components/partage/TabNavigation';
 import InfoBadge from '@/components/ui/InfoBadge';
 import StatusBadge from '@/components/ui/StatusBadge';
-import DataTableSection from '@/components/partage/DataTableSection';
+import AnnonceActionsMenu from '@/components/partage/AnnonceActionsMenu';
+
+// Composants de Section
 import AnnoncesSection from '@/components/annonces/AnnoncesSection';
+import MessagerieSection from '@/components/annonces/MessagerieSection';
+import NotificationsSection from '@/components/annonces/NotificationsSection';
+import AnnonceViewModal from '@/components/annonces/AnnonceViewModal';
+import AnnonceEditModal from '@/components/annonces/AnnonceEditModal';
 
 // Hooks
-import useApi from '@/lib/hooks/useApi';
-import { annoncesProfesseurAPI } from '@/lib/api/endpoints';
-import Header from '@/components/layout/Header';
+import useAnnonces from '@/lib/hooks/useAnnonces';
+import useAuth from '@/lib/hooks/useAuth';
+import useModal from '@/lib/hooks/useModal';
+import { useModalOperations } from '@/lib/hooks/useModalOperations';
 
 // Helpers
 import {
   getPriorityIcon,
   getCibleText,
+  filterAnnonces,
+  countAnnoncesByType,
+  getAnnonceStats,
+  getAnnonceStatusLabel,
+  getAnnonceStatusVariant
 } from '@/lib/utils/annonceHelpers';
-import { formatDate } from '@/lib/utils/format';
 
-export default function ProfesseurAnnoncesPage() {
+export default function AnnoncesPage() {
+  const [activeTab, setActiveTab] = useState('globale');
+  const [activeMainSection, setActiveMainSection] = useState('annonces');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
+  const [selectedAnnonce, setSelectedAnnonce] = useState(null);
 
-  const { data: annonces = [], loading } = useApi(() => annoncesProfesseurAPI.getAll());
+  const viewModal = useModal();
+  const deleteModal = useModal();
+  const editModal = useModal();
 
-  // Filtrer les données
+  const { user } = useAuth();
+  const { annonces, loading, deleteAnnonce } = useAnnonces();
+  const { isSubmitting, handleDelete } = useModalOperations();
+
+  // ============ LOGIQUE DE DONNÉES (SIMPLIFIÉE) ============
+  const stats = useMemo(() => getAnnonceStats(annonces, user?.id), [annonces, user?.id]);
+
   const filteredData = useMemo(() => {
-    if (!Array.isArray(annonces)) return [];
-    
-    return annonces.filter((annonce) => {
-      const searchLower = searchQuery.toLowerCase();
-      const matchSearch = 
-        annonce.titre?.toLowerCase().includes(searchLower) ||
-        annonce.contenu?.toLowerCase().includes(searchLower);
+    return filterAnnonces(annonces, activeTab, searchQuery);
+  }, [annonces, activeTab, searchQuery]);
 
-      if (activeTab === 'all') return matchSearch;
-      if (activeTab === 'envoyees') return matchSearch && annonce.is_active;
-      if (activeTab === 'brouillons') return matchSearch && !annonce.is_active;
-      return matchSearch;
-    });
-  }, [annonces, searchQuery, activeTab]);
+  // ============ HANDLERS (SIMPLIFIÉS) ============
+  const handleConfirmDelete = () => {
+    return handleDelete(
+      deleteAnnonce,
+      selectedAnnonce.id,
+      deleteModal,
+      'Annonce supprimée avec succès',
+      () => setSelectedAnnonce(null)
+    );
+  };
 
-  // Configuration des colonnes
+  // ============ HELPERS RENDU (SIMPLIFIÉS) ============
   const columns = [
     {
       key: 'annonce-sujet',
@@ -60,15 +80,8 @@ export default function ProfesseurAnnoncesPage() {
             {getPriorityIcon(row.priorite)}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="font-bold text-sm text-gray-800 truncate">
-              {row.titre}
-            </span>
-            <span className="text-xs text-gray-500 truncate line-clamp-1">
-              {row.contenu}
-            </span>
-            <span className="text-xs text-gray-400 mt-1">
-              {formatDate(row.created_at, 'dd/MM/yyyy HH:mm')}
-            </span>
+            <span className="font-bold text-sm text-gray-800 truncate">{row.titre}</span>
+            <span className="text-xs text-gray-500 truncate line-clamp-1">{row.contenu}</span>
           </div>
         </div>
       )
@@ -90,86 +103,90 @@ export default function ProfesseurAnnoncesPage() {
       className: 'min-w-[100px] hidden sm:table-cell',
       render: (_, row) => (
         <StatusBadge 
-          status={row.is_active ? 'Envoyé' : 'Brouillon'} 
-          variant={row.is_active ? 'success' : 'warning'} 
+          status={getAnnonceStatusLabel(row.is_active)} 
+          variant={getAnnonceStatusVariant(row.is_active)} 
         />
       )
     },
     {
       key: 'annonce-actions',
       label: 'ACTIONS',
-      className: 'w-[100px]',
+      className: 'w-[80px]',
       render: (_, row) => (
-        <div className="flex justify-end gap-2">
-          <Link href={`/professeur/annonces/${row.id}`}>
-            <Button size="sm" variant="outline">
-              Voir
-            </Button>
-          </Link>
+        <div className="flex justify-end">
+          <AnnonceActionsMenu 
+            annonce={row} 
+            currentUserId={user?.id}
+            onView={(a) => { setSelectedAnnonce(a); viewModal.open(); }} 
+            onEdit={(a) => { setSelectedAnnonce(a); editModal.open(); }} 
+            onDelete={(a) => { setSelectedAnnonce(a); deleteModal.open(); }} 
+          />
         </div>
       )
     }
   ];
 
+  // ============ MODAL CONTENT ============
+  const viewModalContent = <AnnonceViewModal annonce={selectedAnnonce} />;
+  const editModalContent = <AnnonceEditModal annonce={selectedAnnonce} onClose={editModal.close} />;
+
   return (
-    <div>
-      <Header 
-        title="Mes Annonces" 
-        description="Gérez les annonces pour vos étudiants"
+    <ListPageLayout
+      title="Centre de Communication"
+      description="Gérez les annonces, les notifications et la messagerie interne."
+      actionButton={
+        activeMainSection === 'annonces' && (
+          <Link href="/professeur/annonces/nouveau">
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="w-4 h-4 mr-2" /> Nouvelle Annonce
+            </Button>
+          </Link>
+        )
+      }
+      viewModal={viewModal}
+      editModal={editModal}
+      deleteModal={deleteModal}
+      isSubmitting={isSubmitting}
+      selectedItem={selectedAnnonce}
+      viewModalTitle="Détails de l'annonce"
+      viewModalContent={viewModalContent}
+      editModalTitle="Modifier l'annonce"
+      editModalContent={editModalContent}
+      deleteModalItemName={selectedAnnonce?.titre || 'cette annonce'}
+      onDeleteConfirm={handleConfirmDelete}
+    >
+      <TabNavigation
+        tabs={[
+          { id: 'annonces', label: 'Annonces' },
+          { id: 'notifications', label: 'Notifications' },
+          { id: 'messagerie', label: 'Messagerie' },
+        ]}
+        activeTab={activeMainSection}
+        onTabChange={setActiveMainSection}
       />
-      <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto">
-        <ListPageLayout
-          title="Mes Annonces"
-          description="Publiez et gérez vos annonces"
-          actionButton={
-            <Link href="/professeur/annonces/nouveau">
-              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="w-4 h-4 mr-2" /> Nouvelle Annonce
-              </Button>
-            </Link>
-          }
-        >
-          {/* Onglets */}
-          <div className="mb-6">
-            <TabNavigation
-              tabs={[
-                { id: 'all', label: 'Tous', count: annonces.length },
-                { 
-                  id: 'envoyees', 
-                  label: 'Envoyées', 
-                  count: annonces.filter(a => a.is_active).length 
-                },
-                { 
-                  id: 'brouillons', 
-                  label: 'Brouillons', 
-                  count: annonces.filter(a => !a.is_active).length 
-                }
-              ]}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-            />
-          </div>
 
-          {/* Barre de recherche */}
-          <div className="mb-6">
-            <input
-              type="text"
-              placeholder="Rechercher par titre ou contenu..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+      {activeMainSection === 'annonces' && (
+        <AnnoncesSection 
+          stats={stats}
+          tabs={[
+            { id: 'globale', label: 'Globale', count: countAnnoncesByType(annonces, 'globale') },
+            { id: 'filiere', label: 'Par Filière', count: countAnnoncesByType(annonces, 'filiere') },
+            { id: 'niveau', label: 'Par Niveau', count: countAnnoncesByType(annonces, 'niveau') },
+            { id: 'cours', label: 'Cours', count: countAnnoncesByType(annonces, 'cours') }
+          ]}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onReset={() => setSearchQuery('')}
+          columns={columns}
+          filteredData={filteredData}
+          loading={loading}
+        />
+      )}
 
-          {/* Tableau des annonces */}
-          <DataTableSection
-            columns={columns}
-            data={filteredData}
-            loading={loading}
-            emptyMessage="Aucune annonce trouvée"
-          />
-        </ListPageLayout>
-      </main>
-    </div>
+      {activeMainSection === 'messagerie' && <MessagerieSection />}
+      {activeMainSection === 'notifications' && <NotificationsSection />}
+    </ListPageLayout>
   );
 }

@@ -2,8 +2,12 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { annoncesService } from '@/lib/services/annonces.service';
+import useAuth from '@/lib/hooks/useAuth';
 
 export const useAnnonces = () => {
+    const { user } = useAuth(); // Récupérer l'utilisateur connecté
+    const userRole = user?.role?.name || 'admin'; // Défaut à 'admin' si non défini
+
     const [annonces, setAnnonces] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -44,7 +48,8 @@ export const useAnnonces = () => {
             setLoading(true);
             setError(null);
 
-            const response = await annoncesService.getAll({
+            // Utiliser le rôle de l'utilisateur
+            const response = await annoncesService.getAll(userRole, {
                 page: pagination.currentPage,
                 per_page: pagination.perPage,
                 ...filters,
@@ -77,7 +82,7 @@ export const useAnnonces = () => {
                 setLoading(false);
             }
         }
-    }, [pagination.currentPage, pagination.perPage, filters]);
+    }, [userRole, pagination.currentPage, pagination.perPage, filters]);
 
     // Effet initial : charger les données une seule fois
     useEffect(() => {
@@ -129,7 +134,12 @@ export const useAnnonces = () => {
      */
     const createAnnonce = useCallback(async (annonceData) => {
         try {
-            const response = await annoncesService.create(annonceData);
+            // Validation côté client pour les professeurs
+            if (userRole === 'professeur' && annonceData.type === 'globale') {
+                throw new Error('Les professeurs ne peuvent pas créer d\'annonces globales');
+            }
+
+            const response = await annoncesService.create(userRole, annonceData);
             // Rafraîchir la liste après création
             await refetch();
             return response;
@@ -149,14 +159,19 @@ export const useAnnonces = () => {
             }
             throw errorObj;
         }
-    }, [refetch]);
+    }, [userRole, refetch]);
 
     /**
      * Mettre à jour une annonce
      */
     const updateAnnonce = useCallback(async (annonceId, annonceData) => {
         try {
-            const response = await annoncesService.update(annonceId, annonceData);
+            // Validation côté client pour les professeurs
+            if (userRole === 'professeur' && annonceData.type === 'globale') {
+                throw new Error('Les professeurs ne peuvent pas créer d\'annonces globales');
+            }
+
+            const response = await annoncesService.update(userRole, annonceId, annonceData);
 
             // Mise à jour optimiste : mettre à jour l'état local immédiatement
             setAnnonces((prevAnnonces) =>
@@ -172,14 +187,14 @@ export const useAnnonces = () => {
             console.error('Erreur lors de la modification:', err);
             throw err;
         }
-    }, [refetch]);
+    }, [userRole, refetch]);
 
     /**
      * Supprimer une annonce
      */
     const deleteAnnonce = useCallback(async (annonceId) => {
         try {
-            const response = await annoncesService.delete(annonceId);
+            const response = await annoncesService.delete(userRole, annonceId);
             // Rafraîchir la liste après suppression
             await refetch();
             return response;
@@ -187,14 +202,14 @@ export const useAnnonces = () => {
             console.error('Erreur lors de la suppression:', err);
             throw err;
         }
-    }, [refetch]);
+    }, [userRole, refetch]);
 
     /**
      * Activer/Désactiver une annonce
      */
     const toggleActive = useCallback(async (annonceId) => {
         try {
-            const response = await annoncesService.toggleActive(annonceId);
+            const response = await annoncesService.toggleActive(userRole, annonceId);
             // Rafraîchir la liste après changement de statut
             await refetch();
             return response;
@@ -202,7 +217,7 @@ export const useAnnonces = () => {
             console.error('Erreur lors du changement de statut:', err);
             throw err;
         }
-    }, [refetch]);
+    }, [userRole, refetch]);
 
     return {
         // État
@@ -211,6 +226,7 @@ export const useAnnonces = () => {
         links,
         loading,
         error,
+        userRole, // Exposer le rôle pour usage externe si nécessaire
 
         // Actions de base
         refetch,

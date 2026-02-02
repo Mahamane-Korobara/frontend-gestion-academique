@@ -193,6 +193,11 @@ export const emploiDuTempsProfesseurAPI = {
 // ============================================
 export const annoncesProfesseurAPI = {
     getAll: (params) => apiClient.get('/professeur/annonces', params),
+    getById: (id) => apiClient.get(`/professeur/annonces/${id}`),
+    create: (data) => apiClient.post('/professeur/annonces', data),
+    update: (id, data) => apiClient.put(`/professeur/annonces/${id}`, data),
+    delete: (id) => apiClient.delete(`/professeur/annonces/${id}`),
+    toggleActive: (id) => apiClient.post(`/professeur/annonces/${id}/toggle-active`),
 };
 
 // ============================================

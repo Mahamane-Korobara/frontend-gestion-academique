@@ -21,6 +21,7 @@ import AnnonceEditModal from '@/components/annonces/AnnonceEditModal';
 
 // Hooks
 import useAnnonces from '@/lib/hooks/useAnnonces';
+import useAuth from '@/lib/hooks/useAuth';
 import useModal from '@/lib/hooks/useModal';
 import { useModalOperations } from '@/lib/hooks/useModalOperations';
 
@@ -45,11 +46,12 @@ export default function AnnoncesPage() {
   const deleteModal = useModal();
   const editModal = useModal();
 
+  const { user } = useAuth();
   const { annonces, loading, deleteAnnonce } = useAnnonces();
   const { isSubmitting, handleDelete } = useModalOperations();
 
   // ============ LOGIQUE DE DONNÉES (SIMPLIFIÉE) ============
-  const stats = useMemo(() => getAnnonceStats(annonces), [annonces]);
+  const stats = useMemo(() => getAnnonceStats(annonces, user?.id), [annonces, user?.id]);
 
   const filteredData = useMemo(() => {
     return filterAnnonces(annonces, activeTab, searchQuery);
@@ -114,6 +116,7 @@ export default function AnnoncesPage() {
         <div className="flex justify-end">
           <AnnonceActionsMenu 
             annonce={row} 
+            currentUserId={user?.id}
             onView={(a) => { setSelectedAnnonce(a); viewModal.open(); }} 
             onEdit={(a) => { setSelectedAnnonce(a); editModal.open(); }} 
             onDelete={(a) => { setSelectedAnnonce(a); deleteModal.open(); }} 
