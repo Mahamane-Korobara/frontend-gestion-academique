@@ -32,7 +32,7 @@ export default function UserAvatar({
   return (
     <div 
       className={cn(
-        'rounded-full flex items-center justify-center font-bold border flex-shrink-0',
+        'rounded-full flex items-center justify-center font-bold border shrink-0',
         sizeClasses[size],
         variantClasses[variant],
         className

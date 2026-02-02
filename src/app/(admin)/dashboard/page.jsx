@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import useDashboard from '@/lib/hooks/useDashboard';
 import DashboardLoadingState from '@/components/dashboard/DashboardLoadingState';
 import DashboardAlerts from '@/components/dashboard/DashboardAlerts';
-import DashboardQuickActions from '@/components/dashboard/DashboardQuickActions';
+import DynamicQuickActions from '@/components/dashboard/DynamicQuickActions';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import DashboardAcademique from '@/components/dashboard/DashboardAcademique';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
@@ -37,7 +37,7 @@ export default function AdminDashboard() {
       <DashboardAlerts alerts={alerts} />
 
       {/* Actions Rapides */}
-      <DashboardQuickActions />
+      <DynamicQuickActions role="admin" />
 
       {/* Statistiques principales */}
       <DashboardStats resume={resume} />

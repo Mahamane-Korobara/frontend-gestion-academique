@@ -31,7 +31,7 @@ export default function DashboardSection({ title, description, children, mobileC
                   Voir tout l'historique
                 </Button>
               </SheetTrigger>
-              <SheetContent className="sm:max-w-[500px] overflow-y-auto">
+              <SheetContent className="sm:max-w-125 overflow-y-auto">
                 <SheetHeader className="mb-4 text-left">
                   <SheetTitle>{title}</SheetTitle>
                   <SheetDescription>{description}</SheetDescription>
