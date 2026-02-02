@@ -2,90 +2,81 @@
  * Service pour la gestion des annonces
  * Fonctionne pour Admin et Professeur
  */
-
 import { annoncesAdminAPI, annoncesProfesseurAPI } from '@/lib/api/endpoints';
 
 /**
  * Détermine quel API utiliser selon le rôle
  */
 const getAPI = (role) => {
-    if (role === 'professeur') {
-        return annoncesProfesseurAPI;
-    }
-    return annoncesAdminAPI;
+    return role === 'professeur' ? annoncesProfesseurAPI : annoncesAdminAPI;
 };
 
 export const annoncesService = {
     /**
      * Récupérer toutes les annonces avec pagination
-     * @param {string} role - 'admin' ou 'professeur'
-     * @param {object} params - Paramètres de filtrage et pagination
      */
-    getAll: (role, params = {}) => {
-        const api = getAPI(role);
-        return api.getAll(params);
+    getAll: async (role, params = {}) => {
+        try {
+            // Sécurité : Si pas de rôle, on ne tente même pas l'appel
+            if (!role) return { data: [], meta: {} };
+
+            const api = getAPI(role);
+            const response = await api.getAll(params);
+
+            return response;
+        } catch (error) {
+            console.error(`Erreur API (${role}):`, error.response?.data || error.message);
+            throw error;
+        }
     },
 
     /**
      * Récupérer une annonce par ID
-     * @param {string} role - 'admin' ou 'professeur'
-     * @param {number} id - ID de l'annonce
      */
-    getById: (role, id) => {
+    getById: async (role, id) => {
         const api = getAPI(role);
-        return api.getById(id);
+        return await api.getById(id);
     },
 
     /**
      * Créer une nouvelle annonce
-     * @param {string} role - 'admin' ou 'professeur'
-     * @param {object} data - Données de l'annonce
      */
-    create: (role, data) => {
+    create: async (role, data) => {
         const api = getAPI(role);
 
-        // Les professeurs ne peuvent créer que des annonces de type 'classe'
         if (role === 'professeur' && data.type === 'globale') {
             throw new Error('Les professeurs ne peuvent pas créer d\'annonces globales');
         }
 
-        return api.create(data);
+        return await api.create(data);
     },
 
     /**
      * Mettre à jour une annonce
-     * @param {string} role - 'admin' ou 'professeur'
-     * @param {number} id - ID de l'annonce
-     * @param {object} data - Données à mettre à jour
      */
-    update: (role, id, data) => {
+    update: async (role, id, data) => {
         const api = getAPI(role);
 
-        // Les professeurs ne peuvent pas modifier le type vers 'globale'
         if (role === 'professeur' && data.type === 'globale') {
-            throw new Error('Les professeurs ne peuvent pas créer d\'annonces globales');
+            throw new Error('Les professeurs ne peuvent pas modifier le type vers globale');
         }
 
-        return api.update(id, data);
+        return await api.update(id, data);
     },
 
     /**
      * Supprimer une annonce
-     * @param {string} role - 'admin' ou 'professeur'
-     * @param {number} id - ID de l'annonce
      */
-    delete: (role, id) => {
+    delete: async (role, id) => {
         const api = getAPI(role);
-        return api.delete(id);
+        return await api.delete(id);
     },
 
     /**
      * Activer/Désactiver une annonce
-     * @param {string} role - 'admin' ou 'professeur'
-     * @param {number} id - ID de l'annonce
      */
-    toggleActive: (role, id) => {
+    toggleActive: async (role, id) => {
         const api = getAPI(role);
-        return api.toggleActive(id);
+        return await api.toggleActive(id);
     },
 };

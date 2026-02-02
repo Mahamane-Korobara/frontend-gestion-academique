@@ -1,70 +1,58 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { filieresAPI } from '@/lib/api/endpoints';
-import { niveauxAPI } from '@/lib/api/endpoints';
-import { coursAPI } from '@/lib/api/endpoints';
+import { useState, useEffect, useCallback } from 'react';
+import { filieresAPI, niveauxAPI, coursAPI } from '@/lib/api/endpoints';
+import { professeurCoursService } from '@/lib/services/professeurCours.service';
+import useAuth from '@/lib/hooks/useAuth';
 
 /**
- * Hook pour charger les options dynamiques pour le formulaire d'annonce
+ * Hook hybride pour charger les options du formulaire d'annonce
  */
 export const useAnnounceFormOptions = () => {
+    const { user } = useAuth();
     const [filieres, setFilieres] = useState([]);
     const [niveaux, setNiveaux] = useState([]);
     const [cours, setCours] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Charger les filières
-    const fetchFilieres = async () => {
-        try {
-            const response = await filieresAPI.getAll({ per_page: 999 });
-            setFilieres(response.data || []);
-        } catch (err) {
-            console.error('Erreur lors du chargement des filières:', err);
-            setError(err);
-        }
-    };
+    const loadOptions = useCallback(async () => {
+        const userRole = user?.role?.name;
+        if (!userRole) return;
 
-    // Charger les niveaux
-    const fetchNiveaux = async () => {
-        try {
-            const response = await niveauxAPI.getAll();
-            setNiveaux(response.data || []);
-        } catch (err) {
-            console.error('Erreur lors du chargement des niveaux:', err);
-            setError(err);
-        }
-    };
+        setLoading(true);
+        setError(null);
 
-    // Charger les cours
-    const fetchCours = async () => {
         try {
-            const response = await coursAPI.getAll({ per_page: 999 });
-            setCours(response.data || []);
-        } catch (err) {
-            console.error('Erreur lors du chargement des cours:', err);
-            setError(err);
-        }
-    };
-
-    // Charger toutes les options au mount
-    useEffect(() => {
-        const loadAllOptions = async () => {
-            setLoading(true);
-            try {
-                await Promise.all([
-                    fetchFilieres(),
-                    fetchNiveaux(),
-                    fetchCours(),
+            if (userRole === 'professeur') {
+                // LOGIQUE PROFESSEUR : Appel unique optimisé
+                const data = await professeurCoursService.getFormOptions();
+                setFilieres(data.filieres || []);
+                setNiveaux(data.niveaux || []);
+                setCours(data.cours || []);
+            } else {
+                // LOGIQUE ADMIN : Appels parallèles sur endpoints génériques
+                const [fRes, nRes, cRes] = await Promise.all([
+                    filieresAPI.getAll({ per_page: 999 }),
+                    niveauxAPI.getAll(),
+                    coursAPI.getAll({ per_page: 999 }),
                 ]);
-            } finally {
-                setLoading(false);
-            }
-        };
 
-        loadAllOptions();
-    }, []);
+                setFilieres(fRes.data || []);
+                setNiveaux(nRes.data || []);
+                setCours(cRes.data || []);
+            }
+        } catch (err) {
+            console.error('Erreur lors du chargement des options:', err);
+            setError(err);
+        } finally {
+            setLoading(false);
+        }
+    }, [user?.role?.name]);
+
+    useEffect(() => {
+        loadOptions();
+    }, [loadOptions]);
 
     return {
         filieres,
@@ -72,6 +60,7 @@ export const useAnnounceFormOptions = () => {
         cours,
         loading,
         error,
+        refresh: loadOptions // Permet de recharger manuellement si besoin
     };
 };
 

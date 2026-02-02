@@ -8,9 +8,9 @@ import Link from 'next/link';
 // UI Components
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import FormInput from './FormInput';
-import FormTextarea from './FormTextarea';
-import FormSelect from './FormSelect';
+import FormInput from '@/components/forms/FormInput';
+import FormTextarea from '@/components/forms/FormTextarea';
+import FormSelect from '@/components/forms/FormSelect';
 import ErrorAlert from '@/components/partage/ErrorAlert';
 
 // Hooks & Services
@@ -31,7 +31,7 @@ export default function AnnonceForm() {
   const [formData, setFormData] = useState({
     titre: '',
     contenu: '',
-    type: isProfesseur ? 'filiere' : 'globale', // Type par défaut selon le rôle
+    type: isProfesseur ? 'cours' : 'globale', // Type par défaut selon le rôle
     filiere_id: '',
     niveau_id: '',
     cours_id: '',
@@ -42,12 +42,26 @@ export default function AnnonceForm() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Filtrer les cours du professeur uniquement
+  const professorCours = isProfesseur 
+    ? cours.filter(c => c.professeur_id === user?.professeur?.id)
+    : cours;
+
+  // Extraire les filières et niveaux uniques des cours du professeur
+  const professorFilieres = isProfesseur
+    ? filieres.filter(f => professorCours.some(c => c.filiere_id === f.id))
+    : filieres;
+
+  const professorNiveaux = isProfesseur
+    ? niveaux.filter(n => professorCours.some(c => c.niveau_id === n.id))
+    : niveaux;
+
   // Options de type selon le rôle
   const typeOptions = isProfesseur
     ? [
-        { value: 'filiere', label: 'Par Filière' },
+        { value: 'cours', label: 'Par Cours' },
         { value: 'niveau', label: 'Par Niveau' },
-        { value: 'cours', label: 'Par Cours' }
+        { value: 'filiere', label: 'Par Filière' }
       ]
     : [
         { value: 'globale', label: 'Globale' },
@@ -94,6 +108,14 @@ export default function AnnonceForm() {
 
     if (formData.type === 'cours' && !formData.cours_id) {
       newErrors.cours_id = 'Veuillez sélectionner un cours';
+    }
+
+    // Validation supplémentaire pour les professeurs
+    if (isProfesseur && formData.type === 'cours') {
+      const selectedCours = professorCours.find(c => c.id.toString() === formData.cours_id);
+      if (!selectedCours) {
+        newErrors.cours_id = 'Vous pouvez uniquement créer des annonces pour vos cours';
+      }
     }
 
     // Validation de la date
@@ -205,7 +227,13 @@ export default function AnnonceForm() {
 
       await createAnnonce(dataToSubmit);
       toast.success('Annonce créée avec succès');
-      router.push('/annonces');
+      
+      // Redirection selon le rôle
+      if (isProfesseur) {
+        router.push('/professeur/annonces');
+      } else {
+        router.push('/annonces');
+      }
     } catch (error) {
       console.error('Erreur lors de la création:', error);
       
@@ -223,12 +251,38 @@ export default function AnnonceForm() {
     }
   };
 
+  // Afficher un message si le professeur n'a pas de cours
+  if (isProfesseur && professorCours.length === 0 && !optionsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4">
+        <div className="max-w-2xl mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle>Aucun cours assigné</CardTitle>
+              <CardDescription>
+                Vous devez être assigné à au moins un cours pour créer des annonces.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">
+                Veuillez contacter l'administrateur pour qu'il vous assigne des cours.
+              </p>
+              <Link href={isProfesseur ? '/professeur/annonces' : '/annonces'}>
+                <Button>Retour aux annonces</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Link href="/annonces">
+          <Link href={isProfesseur ? '/professeur/annonces' : '/annonces'}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="w-5 h-5" />
             </Button>
@@ -244,7 +298,7 @@ export default function AnnonceForm() {
             </h1>
             <p className="text-gray-600 mt-1">
               {isProfesseur 
-                ? 'Créez une annonce ciblée pour vos classes'
+                ? 'Créez une annonce pour vos cours'
                 : 'Créez et publiez une nouvelle annonce'
               }
             </p>
@@ -258,9 +312,9 @@ export default function AnnonceForm() {
               Informations importantes
             </h3>
             <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-              <li>Vous ne pouvez créer que des annonces ciblées</li>
-              <li>Types disponibles : Filière, Niveau, Cours</li>
-              <li>Les annonces globales sont réservées aux administrateurs</li>
+              <li>Vous pouvez créer des annonces uniquement pour vos cours</li>
+              <li>Types disponibles : Cours, Niveau, Filière</li>
+              <li>Vous avez actuellement {professorCours.length} cours assigné(s)</li>
             </ul>
           </div>
         )}
@@ -353,7 +407,7 @@ export default function AnnonceForm() {
                   label="Filière"
                   value={formData.filiere_id}
                   onValueChange={(value) => handleSelectChange('filiere_id', value)}
-                  options={filieres.map((f) => ({ value: f.id.toString(), label: f.nom }))}
+                  options={professorFilieres.map((f) => ({ value: f.id.toString(), label: f.nom }))}
                   placeholder="Sélectionner une filière"
                   error={errors.filiere_id}
                   disabled={isSubmitting || optionsLoading}
@@ -367,7 +421,7 @@ export default function AnnonceForm() {
                   label="Niveau"
                   value={formData.niveau_id}
                   onValueChange={(value) => handleSelectChange('niveau_id', value)}
-                  options={niveaux.map((n) => ({ value: n.id.toString(), label: n.nom }))}
+                  options={professorNiveaux.map((n) => ({ value: n.id.toString(), label: n.nom }))}
                   placeholder="Sélectionner un niveau"
                   error={errors.niveau_id}
                   disabled={isSubmitting || optionsLoading}
@@ -381,8 +435,8 @@ export default function AnnonceForm() {
                   label="Cours"
                   value={formData.cours_id}
                   onValueChange={(value) => handleSelectChange('cours_id', value)}
-                  options={cours.map((c) => ({ value: c.id.toString(), label: c.titre }))}
-                  placeholder="Sélectionner un cours"
+                  options={professorCours.map((c) => ({ value: c.id.toString(), label: c.titre }))}
+                  placeholder="Sélectionner un de vos cours"
                   error={errors.cours_id}
                   disabled={isSubmitting || optionsLoading}
                   required
@@ -406,7 +460,7 @@ export default function AnnonceForm() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.push('/annonces')}
+                  onClick={() => router.push(isProfesseur ? '/professeur/annonces' : '/annonces')}
                   disabled={isSubmitting || optionsLoading}
                 >
                   Annuler

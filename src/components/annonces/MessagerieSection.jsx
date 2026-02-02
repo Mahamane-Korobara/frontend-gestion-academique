@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { useMessages } from '@/lib/hooks/useMessages';
 import { useUsers } from '@/lib/hooks/useUsers';
+import useProfesseurDirectory from '@/lib/hooks/useProfesseurDirectory';
 import useAuth from '@/lib/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +46,12 @@ export default function MessagerieSection() {
     fetchUnreadCount 
   } = useMessages();
   const { user } = useAuth();
-  const { users, loading: usersLoading, error: usersError } = useUsers();
+  
+  // Utiliser le hook approprié selon le rôle
+  const isProfesseur = user?.role?.name === 'professeur';
+  const { users, loading: usersLoading, error: usersError } = isProfesseur 
+    ? useProfesseurDirectory()
+    : useUsers();
   
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);

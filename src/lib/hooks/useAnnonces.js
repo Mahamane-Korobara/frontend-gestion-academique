@@ -5,8 +5,9 @@ import { annoncesService } from '@/lib/services/annonces.service';
 import useAuth from '@/lib/hooks/useAuth';
 
 export const useAnnonces = () => {
-    const { user } = useAuth(); // Récupérer l'utilisateur connecté
-    const userRole = user?.role?.name || 'admin'; // Défaut à 'admin' si non défini
+    const { user } = useAuth();
+    // On attend que l'user soit chargé pour définir le rôle réel
+    const userRole = user?.role?.name || null;
 
     const [annonces, setAnnonces] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -17,8 +18,6 @@ export const useAnnonces = () => {
         perPage: 15,
         total: 0,
         lastPage: 1,
-        from: 1,
-        to: 0,
     });
 
     const [filters, setFilters] = useState({
@@ -28,217 +27,98 @@ export const useAnnonces = () => {
         isActive: null,
     });
 
-    const [links, setLinks] = useState({});
-
-    // Référence pour éviter les doubles appels en Strict Mode
     const abortControllerRef = useRef(null);
-    const initialFetchDone = useRef(false);
 
-    // Fonction de fetch principale
-    const fetchAnnonces = useCallback(async (shouldResetInitialFlag = false) => {
-        // Annuler la requête précédente si elle existe
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
+    const fetchAnnonces = useCallback(async () => {
+        // IMPORTANT : Ne pas lancer l'appel si l'utilisateur n'est pas encore identifié
+        if (!userRole) return;
 
-        // Créer un nouveau AbortController
+        if (abortControllerRef.current) abortControllerRef.current.abort();
         abortControllerRef.current = new AbortController();
 
         try {
             setLoading(true);
             setError(null);
 
-            // Utiliser le rôle de l'utilisateur
             const response = await annoncesService.getAll(userRole, {
                 page: pagination.currentPage,
                 per_page: pagination.perPage,
                 ...filters,
             });
 
-            // Vérifier si la requête n'a pas été annulée
             if (!abortControllerRef.current.signal.aborted) {
-                setAnnonces(response.data || []);
-                setPagination({
-                    currentPage: response.meta?.current_page || 1,
-                    perPage: response.meta?.per_page || 15,
-                    total: response.meta?.total || 0,
-                    lastPage: response.meta?.last_page || 1,
-                    from: response.meta?.from || 1,
-                    to: response.meta?.to || 0,
-                });
-                setLinks(response.links || {});
+                // On s'adapte à la structure de données (data.data ou data)
+                const data = response.data || response;
+                const meta = response.meta || {};
 
-                if (shouldResetInitialFlag) {
-                    initialFetchDone.current = true;
-                }
+                setAnnonces(Array.isArray(data) ? data : []);
+                setPagination(prev => ({
+                    ...prev,
+                    total: meta.total || 0,
+                    lastPage: meta.last_page || 1,
+                }));
             }
         } catch (err) {
             if (err.name !== 'AbortError') {
-                console.error('Erreur lors du chargement des annonces:', err);
-                setError(err);
+                // Extraction du message d'erreur réel pour éviter le "{}"
+                const message = err.response?.data?.message || err.message || "Erreur de chargement";
+                console.error('Erreur détaillée:', message);
+                setError(message);
             }
         } finally {
-            if (!abortControllerRef.current?.signal.aborted) {
-                setLoading(false);
-            }
+            setLoading(false);
         }
     }, [userRole, pagination.currentPage, pagination.perPage, filters]);
 
-    // Effet initial : charger les données une seule fois
+    // Déclencheur de chargement
     useEffect(() => {
-        if (!initialFetchDone.current) {
-            fetchAnnonces(true);
-        }
-
-        // Cleanup : annuler les requêtes en cours
-        return () => {
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-        };
-    }, []); // Intentionnellement vide pour ne déclencher qu'une fois
-
-    // Effet pour les changements de pagination/filtres (après l'initialisation)
-    useEffect(() => {
-        if (initialFetchDone.current) {
-            fetchAnnonces();
-        }
-    }, [pagination.currentPage, filters, fetchAnnonces]);
-
-    // Mettre à jour la pagination
-    const updatePagination = useCallback((page) => {
-        setPagination((prev) => ({
-            ...prev,
-            currentPage: page,
-        }));
-    }, []);
-
-    // Appliquer les filtres
-    const applyFilters = useCallback((newFilters) => {
-        setFilters(newFilters);
-        setPagination((prev) => ({
-            ...prev,
-            currentPage: 1, // Reset à la première page
-        }));
-    }, []);
-
-    // Refetch manuel
-    const refetch = useCallback(() => {
         fetchAnnonces();
+        return () => abortControllerRef.current?.abort();
     }, [fetchAnnonces]);
 
-    // ============ OPÉRATIONS CRUD ============
+    // --- Actions CRUD ---
 
-    /**
-     * Créer une nouvelle annonce
-     */
     const createAnnonce = useCallback(async (annonceData) => {
         try {
-            // Validation côté client pour les professeurs
-            if (userRole === 'professeur' && annonceData.type === 'globale') {
-                throw new Error('Les professeurs ne peuvent pas créer d\'annonces globales');
-            }
-
             const response = await annoncesService.create(userRole, annonceData);
-            // Rafraîchir la liste après création
-            await refetch();
+            await fetchAnnonces();
             return response;
         } catch (err) {
-            console.error('Erreur lors de la création:', err);
-            // Créer une erreur lisible
-            const errorObj = new Error(
-                err?.message ||
-                err?.errors?.toString() ||
-                'Une erreur est survenue lors de la création de l\'annonce'
-            );
-            if (err?.errors) {
-                errorObj.validationErrors = err.errors;
-            }
-            if (err?.status) {
-                errorObj.status = err.status;
-            }
-            throw errorObj;
+            const msg = err.response?.data?.message || err.message || "Erreur lors de la création";
+            throw new Error(msg);
         }
-    }, [userRole, refetch]);
+    }, [userRole, fetchAnnonces]);
 
-    /**
-     * Mettre à jour une annonce
-     */
-    const updateAnnonce = useCallback(async (annonceId, annonceData) => {
+    const deleteAnnonce = useCallback(async (id) => {
         try {
-            // Validation côté client pour les professeurs
-            if (userRole === 'professeur' && annonceData.type === 'globale') {
-                throw new Error('Les professeurs ne peuvent pas créer d\'annonces globales');
-            }
-
-            const response = await annoncesService.update(userRole, annonceId, annonceData);
-
-            // Mise à jour optimiste : mettre à jour l'état local immédiatement
-            setAnnonces((prevAnnonces) =>
-                prevAnnonces.map((annonce) =>
-                    annonce.id === annonceId ? { ...annonce, ...response.data } : annonce
-                )
-            );
-
-            // Rafraîchir la liste pour synchroniser complètement
-            await refetch();
-            return response;
+            await annoncesService.delete(userRole, id);
+            await fetchAnnonces();
         } catch (err) {
-            console.error('Erreur lors de la modification:', err);
-            throw err;
+            throw new Error(err.response?.data?.message || "Erreur lors de la suppression");
         }
-    }, [userRole, refetch]);
+    }, [userRole, fetchAnnonces]);
 
-    /**
-     * Supprimer une annonce
-     */
-    const deleteAnnonce = useCallback(async (annonceId) => {
+    const toggleActive = useCallback(async (id) => {
         try {
-            const response = await annoncesService.delete(userRole, annonceId);
-            // Rafraîchir la liste après suppression
-            await refetch();
-            return response;
+            await annoncesService.toggleActive(userRole, id);
+            await fetchAnnonces();
         } catch (err) {
-            console.error('Erreur lors de la suppression:', err);
-            throw err;
+            throw new Error(err.response?.data?.message || "Erreur de changement de statut");
         }
-    }, [userRole, refetch]);
-
-    /**
-     * Activer/Désactiver une annonce
-     */
-    const toggleActive = useCallback(async (annonceId) => {
-        try {
-            const response = await annoncesService.toggleActive(userRole, annonceId);
-            // Rafraîchir la liste après changement de statut
-            await refetch();
-            return response;
-        } catch (err) {
-            console.error('Erreur lors du changement de statut:', err);
-            throw err;
-        }
-    }, [userRole, refetch]);
+    }, [userRole, fetchAnnonces]);
 
     return {
-        // État
         annonces,
-        pagination,
-        links,
         loading,
         error,
-        userRole, // Exposer le rôle pour usage externe si nécessaire
-
-        // Actions de base
-        refetch,
-        applyFilters,
-        updatePagination,
+        pagination,
         filters,
-
-        // Opérations CRUD
+        setFilters,
+        setPagination,
+        refetch: fetchAnnonces,
         createAnnonce,
-        updateAnnonce,
         deleteAnnonce,
-        toggleActive,
+        toggleActive
     };
 };
 

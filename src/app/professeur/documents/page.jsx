@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react';
 import { Plus, Download, Trash2, File } from 'lucide-react';
-import Link from 'next/link';
 
 // UI & Layout
 import { Button } from '@/components/ui/button';
