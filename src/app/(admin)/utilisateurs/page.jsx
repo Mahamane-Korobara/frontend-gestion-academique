@@ -20,6 +20,7 @@ import DataTableSection from '@/components/partage/DataTableSection';
 // Hooks personnalisés
 import useUsers from '@/lib/hooks/useUsers';
 import useFilieres from '@/lib/hooks/useFilieres';
+import useNiveaux from '@/lib/hooks/useNiveaux';           // ← AJOUT
 import { useMessages } from '@/lib/hooks/useMessages';
 import { useModalOperations } from '@/lib/hooks/useModalOperations';
 
@@ -51,11 +52,12 @@ export default function UtilisateursPage() {
   const { users, loading: usersLoading, createUser, updateUser, deleteUser, resetPassword } = useUsers();
   const { createMessage, loadConversation, fetchUnreadCount } = useMessages();
   const { activeFilieresOptions, loading: filieresLoading } = useFilieres();
-  
-  // Hook pour gérer les opérations avec modales (SIMPLIFIÉ)
+  const { niveauxOptions, getNiveauxByFiliere, loading: niveauxLoading } = useNiveaux(); 
+
+  // Hook pour gérer les opérations avec modales
   const { isSubmitting, handleCreate, handleUpdate, handleDelete, handleSimpleOperation } = useModalOperations();
 
-  // Filtrer les données côté client (SIMPLIFIÉ)
+  // Filtrer les données côté client
   const filteredData = useMemo(() => {
     return filterUsers(users, activeTab, searchQuery, selectedFilters);
   }, [users, activeTab, searchQuery, selectedFilters]);
@@ -75,7 +77,7 @@ export default function UtilisateursPage() {
     setSelectedFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  // CRUD Operations (SIMPLIFIÉ avec le hook)
+  // CRUD Operations
   const onCreateUser = (formData) => {
     return handleCreate(
       createUser,
@@ -145,7 +147,7 @@ export default function UtilisateursPage() {
         await fetchUnreadCount();
       },
       'Message envoyé avec succès',
-      'Erreur lors de l\'envoi du message'
+      "Erreur lors de l'envoi du message"
     );
 
     if (result.success) {
@@ -156,68 +158,52 @@ export default function UtilisateursPage() {
     return result.success;
   };
 
-  // ============ CONFIGURATION ONGLETS (SIMPLIFIÉ) ============
+  // ============ CONFIGURATION ONGLETS ============
   const tabs = [
-    { 
-      id: 'etudiant', 
-      label: 'Étudiants', 
-      count: countUsersByRole(users, 'etudiant') 
-    },
-    { 
-      id: 'professeur', 
-      label: 'Professeurs', 
-      count: countUsersByRole(users, 'professeur') 
-    }
+    { id: 'etudiant',   label: 'Étudiants',  count: countUsersByRole(users, 'etudiant') },
+    { id: 'professeur', label: 'Professeurs', count: countUsersByRole(users, 'professeur') },
   ];
 
-  // ============ CONFIGURATION COLONNES (SIMPLIFIÉ) ============
+  // ============ CONFIGURATION COLONNES ============
   const columns = [
-    { 
-      key: 'user-identity', 
+    {
+      key: 'user-identity',
       label: 'UTILISATEUR',
       className: 'min-w-[200px]',
       render: (val, row) => (
         <div className="flex items-center gap-3 py-1">
           <UserAvatar name={row.name} variant="blue" />
           <div className="flex flex-col min-w-0">
-            <span className="font-bold text-sm text-gray-800 tracking-tight truncate">
-              {row.name}
-            </span>
+            <span className="font-bold text-sm text-gray-800 tracking-tight truncate">{row.name}</span>
             <span className="text-[10px] text-gray-400 uppercase font-medium">
               Inscrit en {getRegistrationYear(row)}
             </span>
           </div>
         </div>
-      )
+      ),
     },
-    { 
-      key: 'user-contact', 
+    {
+      key: 'user-contact',
       label: 'IDENTIFIANT & EMAIL',
       className: 'min-w-[180px] hidden md:table-cell',
       render: (_, row) => (
         <div className="flex flex-col min-w-0">
-          <span className="text-sm font-semibold text-gray-700 truncate">
-            {getUserIdentifier(row)}
-          </span>
+          <span className="text-sm font-semibold text-gray-700 truncate">{getUserIdentifier(row)}</span>
           <span className="text-xs text-gray-400 truncate">{row.email}</span>
         </div>
-      )
+      ),
     },
-    { 
-      key: 'user-specialty', 
+    {
+      key: 'user-specialty',
       label: 'DÉPARTEMENT',
       className: 'min-w-[140px] hidden lg:table-cell',
-      render: (_, row) => (
-        <InfoBadge label={getUserDepartment(row)} variant="blue" />
-      )
+      render: (_, row) => <InfoBadge label={getUserDepartment(row)} variant="blue" />,
     },
-    { 
-      key: 'user-status', 
+    {
+      key: 'user-status',
       label: 'STATUT',
       className: 'min-w-[100px] hidden sm:table-cell',
-      render: (_, row) => (
-        <StatusBadge status={getUserStatus(row)} />
-      )
+      render: (_, row) => <StatusBadge status={getUserStatus(row)} />,
     },
     {
       key: 'user-actions',
@@ -225,23 +211,30 @@ export default function UtilisateursPage() {
       className: 'w-[80px]',
       render: (_, row) => (
         <div className="flex justify-end">
-          <UserActionsMenu 
-            user={row} 
-            onView={handleView} 
-            onEdit={handleEdit} 
-            onSendMessage={handleSendMessage} 
-            onResetPassword={handleResetPassword} 
-            onDelete={onDeleteUser} 
+          <UserActionsMenu
+            user={row}
+            onView={handleView}
+            onEdit={handleEdit}
+            onSendMessage={handleSendMessage}
+            onResetPassword={handleResetPassword}
+            onDelete={onDeleteUser}
           />
         </div>
-      )
-    }
+      ),
+    },
   ];
 
-  // Options de filtres (SIMPLIFIÉ)
+  // Options de filtres
   const filterOptions = useMemo(() => {
     return getFilterOptionsByRole(activeTab, activeFilieresOptions);
   }, [activeTab, activeFilieresOptions]);
+
+  // Props UserForm communes (évite la duplication)
+  const userFormProps = {
+    filieres: activeFilieresOptions,
+    niveauxOptions,                  
+    getNiveauxByFiliere,            
+  };
 
   return (
     <ListPageLayout
@@ -249,7 +242,7 @@ export default function UtilisateursPage() {
       description="Gérez les comptes étudiants et professeurs."
       actionButton={
         <Button size="sm" className="shadow-sm" onClick={createModal.open}>
-          <Plus className="w-4 h-4 mr-2" /> 
+          <Plus className="w-4 h-4 mr-2" />
           <span className="hidden sm:inline">Ajouter un utilisateur</span>
           <span className="sm:hidden">Ajouter</span>
         </Button>
@@ -262,33 +255,33 @@ export default function UtilisateursPage() {
       createModalTitle="Créer un nouvel utilisateur"
       createModalDescription="Remplissez les informations ci-dessous pour créer un nouveau compte."
       createModalContent={
-        <UserForm 
-          filieres={activeFilieresOptions} 
-          onSubmit={onCreateUser} 
-          onCancel={createModal.close} 
-          loading={isSubmitting} 
+        <UserForm
+          {...userFormProps}                 //filieres + niveauxOptions + getNiveauxByFiliere
+          onSubmit={onCreateUser}
+          onCancel={createModal.close}
+          loading={isSubmitting}
         />
       }
       editModalTitle="Modifier l'utilisateur"
       editModalDescription="Mettez à jour les informations de l'utilisateur."
       editModalContent={
         selectedUser && (
-          <UserForm 
-            user={selectedUser} 
-            filieres={activeFilieresOptions} 
-            onSubmit={onUpdateUser} 
-            onCancel={() => { 
-              editModal.close(); 
-              setSelectedUser(null); 
-            }} 
-            loading={isSubmitting} 
+          <UserForm
+            {...userFormProps}               //filieres + niveauxOptions + getNiveauxByFiliere
+            user={selectedUser}
+            onSubmit={onUpdateUser}
+            onCancel={() => {
+              editModal.close();
+              setSelectedUser(null);
+            }}
+            loading={isSubmitting}
           />
         )
       }
       deleteModalItemName={selectedUser?.name}
       onDeleteConfirm={handleConfirmDelete}
     >
-      <ListPageFilters 
+      <ListPageFilters
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -305,11 +298,11 @@ export default function UtilisateursPage() {
         title={`Liste des ${activeTab === 'etudiant' ? 'étudiants' : 'professeurs'}`}
         columns={columns}
         data={filteredData}
-        loading={usersLoading || filieresLoading}
+        loading={usersLoading || filieresLoading || niveauxLoading}  
         count={filteredData.length}
       />
 
-      {/* Modal pour envoyer un message */}
+      {/* Modal message */}
       <NewConversationModal
         isOpen={isMessageModalOpen}
         onClose={() => {
