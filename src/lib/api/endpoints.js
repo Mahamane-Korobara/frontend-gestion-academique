@@ -248,11 +248,20 @@ export const messagesAPI = {
 };
 
 // ============================================
-// DOCUMENTS (COMMUN)
+// PROFESSEUR - DOCUMENTS
 // ============================================
 export const documentsAPI = {
     getAll: (params) => apiClient.get('/professeur/documents', params),
     create: (data) => apiClient.post('/professeur/documents', data, true),
     delete: (id) => apiClient.delete(`/professeur/documents/${id}`),
     download: (id) => apiClient.download(`/professeur/documents/${id}/download`),
+};
+
+// ============================================
+// ETUDIANTS - DOCUMENTS
+// ============================================
+
+export const documentsEtudiantAPI = {
+    getAll: (params) => apiClient.get('/etudiant/documents', params),
+    download: (id) => apiClient.download(`/etudiant/documents/${id}/download`),
 };

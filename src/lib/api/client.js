@@ -1,83 +1,79 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+'use client';
 
 /**
- * Client API avec gestion automatique des tokens et erreurs
+ * Client API centralisé avec fetch
+ * Version optimisée pour la gestion des JSON et des FormData (Upload)
  */
+
+// Importation des constantes (adapte les chemins selon ton projet)
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 class ApiClient {
     constructor() {
         this.baseURL = API_URL;
     }
 
     /**
-     * Récupérer le token du localStorage
+     * Récupérer le token depuis localStorage (Client-side uniquement)
      */
     getToken() {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('token');
-        }
-        return null;
+        if (typeof window === 'undefined') return null;
+        return localStorage.getItem('token'); // ou STORAGE_KEYS.TOKEN si tu as un fichier de constantes
     }
 
     /**
-     * Sauvegarder le token
+     * Gestion des headers
+     * Si isFormData est true, on laisse le navigateur générer le Content-Type
      */
-    setToken(token) {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('token', token);
-        }
-    }
-
-    /**
-     * Supprimer le token
-     */
-    removeToken() {
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-        }
-    }
-
-    /**
-     * Récupérer les headers par défaut
-     */
-    getHeaders(customHeaders = {}) {
+    getHeaders(isFormData = false, customHeaders = {}) {
         const headers = {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
+            'Accept': 'application/json',
             ...customHeaders,
         };
 
+        // On n'ajoute le Content-Type JSON que si ce n'est pas du FormData
+        if (!isFormData) {
+            headers['Content-Type'] = 'application/json';
+        }
+
         const token = this.getToken();
         if (token) {
-            headers.Authorization = `Bearer ${token}`;
+            headers['Authorization'] = `Bearer ${token}`;
         }
 
         return headers;
     }
 
     /**
-     * Gérer les réponses
+     * Gestion centralisée des réponses
      */
     async handleResponse(response) {
-        // Si pas de contenu (204 No Content)
-        if (response.status === 204) {
-            return null;
+        if (response.status === 204) return null;
+
+        const contentType = response.headers.get('content-type');
+        const isJson = contentType?.includes('application/json');
+
+        let data;
+        try {
+            data = isJson ? await response.json() : await response.text();
+        } catch {
+            data = null;
         }
 
-        const data = await response.json();
-
-        // Si erreur
         if (!response.ok) {
-            // Token expiré ou invalide - Nettoyer le localStorage mais laisser le composant gérer la redirection
-            if (response.status === 401) {
-                this.removeToken();
+            const error = {
+                status: response.status,
+                message: data?.message || 'Une erreur est survenue sur le serveur',
+                errors: data?.errors || null,
+            };
+
+            // Auto-nettoyage en cas de token expiré
+            if (response.status === 401 && typeof window !== 'undefined') {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
             }
 
-            throw {
-                status: response.status,
-                message: data.message || 'Une erreur est survenue',
-                errors: data.errors || null,
-            };
+            throw error;
         }
 
         return data;
@@ -88,9 +84,7 @@ class ApiClient {
      */
     async get(endpoint, params = {}) {
         const url = new URL(`${this.baseURL}${endpoint}`);
-
-        // Ajouter les query params
-        Object.keys(params).forEach((key) => {
+        Object.keys(params).forEach(key => {
             if (params[key] !== null && params[key] !== undefined) {
                 url.searchParams.append(key, params[key]);
             }
@@ -100,34 +94,38 @@ class ApiClient {
             method: 'GET',
             headers: this.getHeaders(),
         });
-
         return this.handleResponse(response);
     }
 
     /**
-     * POST Request
+     * POST Request (Gère JSON et FormData auto)
      */
-    async post(endpoint, body = {}, isFormData = false) {
-        const headers = isFormData
-            ? this.getHeaders({ 'Content-Type': 'multipart/form-data' })
-            : this.getHeaders();
-
-        // Supprimer Content-Type si FormData (le navigateur le gère)
-        if (isFormData) {
-            delete headers['Content-Type'];
-        }
+    async post(endpoint, body = {}) {
+        const isFormData = body instanceof FormData;
 
         const response = await fetch(`${this.baseURL}${endpoint}`, {
             method: 'POST',
-            headers,
+            headers: this.getHeaders(isFormData),
             body: isFormData ? body : JSON.stringify(body),
         });
-
         return this.handleResponse(response);
+    }
+
+    /**
+     * UPLOAD (Alias sémantique pour POST avec FormData)
+     * Utile pour la clarté du code
+     */
+    async upload(endpoint, formData) {
+        if (!(formData instanceof FormData)) {
+            throw new Error("La méthode upload nécessite un objet FormData");
+        }
+        return this.post(endpoint, formData);
     }
 
     /**
      * PUT Request
+     * Note: Pour envoyer des fichiers en PUT avec Laravel, 
+     * utilisez plutôt POST avec formData.append('_method', 'PUT')
      */
     async put(endpoint, body = {}) {
         const response = await fetch(`${this.baseURL}${endpoint}`, {
@@ -135,20 +133,6 @@ class ApiClient {
             headers: this.getHeaders(),
             body: JSON.stringify(body),
         });
-
-        return this.handleResponse(response);
-    }
-
-    /**
-     * PATCH Request
-     */
-    async patch(endpoint, body = {}) {
-        const response = await fetch(`${this.baseURL}${endpoint}`, {
-            method: 'PATCH',
-            headers: this.getHeaders(),
-            body: JSON.stringify(body),
-        });
-
         return this.handleResponse(response);
     }
 
@@ -160,12 +144,12 @@ class ApiClient {
             method: 'DELETE',
             headers: this.getHeaders(),
         });
-
         return this.handleResponse(response);
     }
 
     /**
-     * Download File
+     * DOWNLOAD
+     * Retourne un Blob (pour PDF, images, etc.)
      */
     async download(endpoint) {
         const response = await fetch(`${this.baseURL}${endpoint}`, {
@@ -174,14 +158,16 @@ class ApiClient {
         });
 
         if (!response.ok) {
-            throw new Error('Erreur lors du téléchargement');
+            const errorData = await response.json().catch(() => ({}));
+            throw {
+                status: response.status,
+                message: errorData.message || 'Erreur lors du téléchargement'
+            };
         }
 
         return response.blob();
     }
 }
 
-// Instance unique du client
 const apiClient = new ApiClient();
-
 export default apiClient;

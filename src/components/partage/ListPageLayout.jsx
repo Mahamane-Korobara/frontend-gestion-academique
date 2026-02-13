@@ -8,6 +8,7 @@
 import Header from '@/components/layout/Header';
 import Modal from './Modal';
 import DeleteConfirmModal from './DeleteConfirmModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function ListPageLayout({
   // En-tête
@@ -43,6 +44,10 @@ export default function ListPageLayout({
   
   viewModalTitle = 'Détails',
   viewModalContent = null,
+
+  uploadModal,
+  uploadModalTitle,
+  uploadModalContent,
 }) {
   return (
     <div>
@@ -114,6 +119,17 @@ export default function ListPageLayout({
           itemName={deleteModalItemName}
           title={deleteModalTitle}
         />
+      )}
+
+      {uploadModal && (
+        <Dialog open={uploadModal.isOpen} onOpenChange={uploadModal.toggle}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{uploadModalTitle}</DialogTitle>
+            </DialogHeader>
+            {uploadModalContent}
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
