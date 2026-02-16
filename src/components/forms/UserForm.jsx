@@ -6,6 +6,7 @@ import FormInput from './FormInput';
 import FormSelect from './FormSelect';
 
 export default function UserForm({
+  serverErrors = {},
   user = null,
   filieres = [],
   niveauxOptions = [],
@@ -39,6 +40,19 @@ export default function UserForm({
 
   const [errors, setErrors] = useState({});
 
+  // Après la déclaration de errors
+  const flattenServerErrors = (serverErrs) => {
+    const flat = {};
+    Object.entries(serverErrs).forEach(([key, messages]) => {
+      const shortKey = key.includes('.') ? key.split('.').pop() : key;
+      flat[shortKey] = Array.isArray(messages) ? messages[0] : messages;
+    });
+    return flat;
+  };
+
+  // Fusion des erreurs client + serveur (déclarée après errors)
+  const allErrors = { ...errors, ...flattenServerErrors(serverErrors) };
+
   useEffect(() => {
     if (!user) return;
     const et = user.etudiant || {};
@@ -66,7 +80,7 @@ export default function UserForm({
     });
   }, [user]);
 
-  // Niveaux filtrés par filière (si l'API supporte filiere_id)
+  // Niveaux filtrés par filière
   const filteredNiveaux = useMemo(() => {
     if (!formData.filiere_id) return niveauxOptions;
     const byFiliere = getNiveauxByFiliere(formData.filiere_id);
@@ -120,7 +134,7 @@ export default function UserForm({
         date_naissance: formData.date_naissance,
         sexe: formData.sexe,
         filiere_id: Number(formData.filiere_id),
-        niveau_id: Number(formData.niveau_id), // vrai ID depuis l'API
+        niveau_id: Number(formData.niveau_id),
         ...(formData.lieu_naissance && {
           lieu_naissance: formData.lieu_naissance,
         }),
@@ -150,7 +164,8 @@ export default function UserForm({
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+    // Effacer l'erreur client ET serveur sur modification
+    if (allErrors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
   const filieresSelectOptions = filieres.map((f) => ({
@@ -171,7 +186,7 @@ export default function UserForm({
           type="email"
           value={formData.email}
           onChange={(e) => handleChange('email', e.target.value)}
-          error={errors.email}
+          error={allErrors.email}
           disabled={loading}
           required
           placeholder="jean.dupont@universite.dz"
@@ -185,7 +200,7 @@ export default function UserForm({
             { value: 'etudiant', label: 'Étudiant' },
             { value: 'professeur', label: 'Professeur' },
           ]}
-          error={errors.role}
+          error={allErrors.role}
           disabled={isEditMode || loading}
           required
         />
@@ -202,7 +217,7 @@ export default function UserForm({
             label="Prénom"
             value={formData.prenom}
             onChange={(e) => handleChange('prenom', e.target.value)}
-            error={errors.prenom}
+            error={allErrors.prenom}
             disabled={loading}
             required
             placeholder="Jean"
@@ -212,7 +227,7 @@ export default function UserForm({
             label="Nom"
             value={formData.nom}
             onChange={(e) => handleChange('nom', e.target.value)}
-            error={errors.nom}
+            error={allErrors.nom}
             disabled={loading}
             required
             placeholder="Dupont"
@@ -235,7 +250,7 @@ export default function UserForm({
               label="Matricule"
               value={formData.matricule}
               onChange={(e) => handleChange('matricule', e.target.value)}
-              error={errors.matricule}
+              error={allErrors.matricule}
               disabled={loading}
               required
               placeholder="STU2025001"
@@ -247,7 +262,7 @@ export default function UserForm({
                 type="date"
                 value={formData.date_naissance}
                 onChange={(e) => handleChange('date_naissance', e.target.value)}
-                error={errors.date_naissance}
+                error={allErrors.date_naissance}
                 disabled={loading}
                 required
               />
@@ -261,7 +276,7 @@ export default function UserForm({
                   { value: 'F', label: 'Féminin' },
                 ]}
                 placeholder="Sélectionner"
-                error={errors.sexe}
+                error={allErrors.sexe}
                 disabled={loading}
                 required
               />
@@ -274,7 +289,7 @@ export default function UserForm({
                 onValueChange={handleFiliereChange}
                 options={filieresSelectOptions}
                 placeholder="Choisir une filière"
-                error={errors.filiere_id}
+                error={allErrors.filiere_id}
                 disabled={loading}
                 required
               />
@@ -289,7 +304,7 @@ export default function UserForm({
                     ? 'Choisir un niveau'
                     : "D'abord une filière"
                 }
-                error={errors.niveau_id}
+                error={allErrors.niveau_id}
                 disabled={loading || !formData.filiere_id}
                 required
               />
@@ -306,6 +321,7 @@ export default function UserForm({
                   onChange={(e) =>
                     handleChange('lieu_naissance', e.target.value)
                   }
+                  error={allErrors.lieu_naissance}
                   disabled={loading}
                   placeholder="Ex: Alger"
                 />
@@ -314,6 +330,7 @@ export default function UserForm({
                   label="Adresse"
                   value={formData.adresse}
                   onChange={(e) => handleChange('adresse', e.target.value)}
+                  error={allErrors.adresse}
                   disabled={loading}
                 />
                 <FormInput
@@ -324,6 +341,7 @@ export default function UserForm({
                   onChange={(e) =>
                     handleChange('email_personnel', e.target.value)
                   }
+                  error={allErrors.email_personnel}
                   disabled={loading}
                 />
                 <div className="grid grid-cols-2 gap-3">
@@ -335,6 +353,7 @@ export default function UserForm({
                     onChange={(e) =>
                       handleChange('telephone_etudiant', e.target.value)
                     }
+                    error={allErrors.telephone_etudiant}
                     disabled={loading}
                   />
                   <FormInput
@@ -345,6 +364,7 @@ export default function UserForm({
                     onChange={(e) =>
                       handleChange('telephone_urgence', e.target.value)
                     }
+                    error={allErrors.telephone_urgence}
                     disabled={loading}
                   />
                 </div>
@@ -358,7 +378,7 @@ export default function UserForm({
               label="Code professeur"
               value={formData.code_professeur}
               onChange={(e) => handleChange('code_professeur', e.target.value)}
-              error={errors.code_professeur}
+              error={allErrors.code_professeur}
               disabled={loading}
               required
               placeholder="PROF2025001"
@@ -370,6 +390,7 @@ export default function UserForm({
               onValueChange={(v) => handleChange('specialite', v)}
               options={filieresSelectOptions}
               placeholder="Sélectionner"
+              error={allErrors.specialite}
               disabled={loading}
             />
             <FormSelect
@@ -387,6 +408,7 @@ export default function UserForm({
                 { value: 'Professeur', label: 'Professeur' },
               ]}
               placeholder="Sélectionner"
+              error={allErrors.grade}
               disabled={loading}
             />
             <FormInput
@@ -394,6 +416,7 @@ export default function UserForm({
               label="Bio (optionnel)"
               value={formData.bio}
               onChange={(e) => handleChange('bio', e.target.value)}
+              error={allErrors.bio}
               disabled={loading}
               placeholder="Courte biographie..."
             />

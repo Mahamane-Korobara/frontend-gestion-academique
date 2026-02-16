@@ -11,27 +11,21 @@ export const useNiveaux = () => {
     const abortControllerRef = useRef(null);
     const initialFetchDone = useRef(false);
 
-    const fetchNiveaux = useCallback(async (shouldResetInitialFlag = false) => {
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
+    // La fonction de fetch principale (automatisée)
+    const fetchAllNiveaux = useCallback(async () => {
+        if (abortControllerRef.current) abortControllerRef.current.abort();
         abortControllerRef.current = new AbortController();
 
+        setLoading(true);
         try {
-            setLoading(true);
-            setError(null);
-
             const response = await niveauxService.getAll();
-
             if (!abortControllerRef.current.signal.aborted) {
                 setNiveaux(response.data || []);
-                if (shouldResetInitialFlag) {
-                    initialFetchDone.current = true;
-                }
+                initialFetchDone.current = true;
             }
         } catch (err) {
             if (err.name !== 'AbortError') {
-                console.error('Erreur lors du chargement des niveaux:', err);
+                console.error('Erreur chargement niveaux:', err);
                 setError(err);
             }
         } finally {
@@ -43,49 +37,74 @@ export const useNiveaux = () => {
 
     useEffect(() => {
         if (!initialFetchDone.current) {
-            fetchNiveaux(true);
+            fetchAllNiveaux();
         }
-        return () => {
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-        };
+        return () => abortControllerRef.current?.abort();
+    }, [fetchAllNiveaux]);
+
+    // Charger les niveaux d'une filière spécifique (API Filter)
+    const fetchByFiliere = useCallback(async (filiereId) => {
+        if (!filiereId) return [];
+        setLoading(true);
+        try {
+            const response = await niveauxService.getByFiliere(filiereId);
+            return response.data || [];
+        } catch (err) {
+            console.error(err);
+            return [];
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    const refetch = useCallback(() => fetchNiveaux(), [fetchNiveaux]);
+    // CRUD Operations
+    const createNiveau = useCallback(async (data) => {
+        const res = await niveauxService.create(data);
+        await fetchAllNiveaux(); // Rafraîchit la liste globale
+        return res;
+    }, [fetchAllNiveaux]);
 
-    // ── Helpers ─────────────────────────────────────────────────────────────────
+    const updateNiveau = useCallback(async (id, data) => {
+        const res = await niveauxService.update(id, data);
+        await fetchAllNiveaux();
+        return res;
+    }, [fetchAllNiveaux]);
 
-    /**
-     * Options pour <FormSelect> — valeur = ID réel de la BDD
-     * Format : [{ value: "3", label: "L1" }, ...]
-     */
+    const deleteNiveau = useCallback(async (id) => {
+        const res = await niveauxService.delete(id);
+        await fetchAllNiveaux();
+        return res;
+    }, [fetchAllNiveaux]);
+
+    // 5. HELPERS pour les Selects
     const niveauxOptions = niveaux.map(n => ({
         value: String(n.id),
-        label: n.nom ?? n.name ?? n.label ?? `Niveau ${n.id}`,
+        label: n.nom || `Niveau ${n.id}`,
         id: n.id,
+        filiere_id: n.filiere_id
     }));
 
-    /**
-     * Options filtrées par filière
-     */
-    const getNiveauxByFiliere = useCallback(
-        (filiereId) =>
-            niveaux
-                .filter(n => n.filiere_id === Number(filiereId))
-                .map(n => ({
-                    value: String(n.id),
-                    label: n.nom ?? n.name ?? n.label ?? `Niveau ${n.id}`,
-                    id: n.id,
-                })),
-        [niveaux]
-    );
+    const getNiveauxByFiliere = useCallback((filiereId) => {
+        if (!filiereId) return [];
+        return niveaux
+            .filter(n => String(n.filiere_id) === String(filiereId))
+            .map(n => ({
+                value: String(n.id),
+                label: n.nom || `Niveau ${n.id}`,
+                id: n.id
+            }));
+    }, [niveaux]);
 
     return {
         niveaux,
         loading,
         error,
-        refetch,
+        fetchAllNiveaux,
+        refetch: fetchAllNiveaux,
+        fetchByFiliere,
+        createNiveau,
+        updateNiveau,
+        deleteNiveau,
         niveauxOptions,
         getNiveauxByFiliere,
     };

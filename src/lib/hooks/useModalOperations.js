@@ -1,48 +1,45 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-/**
- * Hook pour gérer les opérations CRUD avec modales et toasts
- */
 export function useModalOperations() {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [validationErrors, setValidationErrors] = useState({});
 
-    /**
-     * Exécute une opération avec gestion d'erreur et toast
-     */
     const executeOperation = async (
         operation,
         successMessage,
         errorMessage = 'Une erreur est survenue'
     ) => {
         setIsSubmitting(true);
+        setValidationErrors({}); // reset à chaque tentative
         try {
             const result = await operation();
             toast.success(successMessage);
             return { success: true, data: result };
         } catch (error) {
-            const message = error.response?.data?.message || error.message || errorMessage;
-            toast.error(message);
+            // ApiClient throw { status, message, errors }
+            if (error.status === 422 && error.errors) {
+                setValidationErrors(error.errors);
+                toast.error('Veuillez corriger les erreurs du formulaire');
+            } else {
+                const message = error.message || errorMessage;
+                toast.error(message);
+            }
             return { success: false, error };
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    /**
-     * Gère une opération de création
-     */
     const handleCreate = async (createFn, formData, modal, successMessage) => {
         const result = await executeOperation(
             () => createFn(formData),
             successMessage || 'Élément créé avec succès',
             'Erreur lors de la création'
         );
-
         if (result.success) {
             modal.close();
         }
-
         return result;
     };
 
@@ -91,6 +88,7 @@ export function useModalOperations() {
 
     return {
         isSubmitting,
+        validationErrors,
         handleCreate,
         handleUpdate,
         handleDelete,

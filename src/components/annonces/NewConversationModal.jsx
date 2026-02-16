@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import {
   Dialog,
+  DialogOverlay,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -110,6 +111,7 @@ export default function NewConversationModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogOverlay className="backdrop-blur-sm" /> 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Nouvelle conversation</DialogTitle>

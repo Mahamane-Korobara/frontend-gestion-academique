@@ -61,13 +61,12 @@ class ApiClient {
         }
 
         if (!response.ok) {
-            const error = {
-                status: response.status,
-                message: data?.message || 'Une erreur est survenue sur le serveur',
-                errors: data?.errors || null,
-            };
+            // Utiliser une vraie Error avec propriétés custom
+            const error = new Error(data?.message || 'Une erreur est survenue sur le serveur');
+            error.status = response.status;
+            error.errors = data?.errors || null;
+            error.data = data;
 
-            // Auto-nettoyage en cas de token expiré
             if (response.status === 401 && typeof window !== 'undefined') {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');

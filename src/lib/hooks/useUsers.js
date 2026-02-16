@@ -133,7 +133,10 @@ export const useUsers = () => {
             await refetch();
             return response;
         } catch (err) {
-            console.error('Erreur lors de la création:', err);
+            console.error('Erreur création:', err.message, {
+                status: err.status,
+                errors: err.errors,
+            });
             throw err;
         }
     }, [refetch]);
