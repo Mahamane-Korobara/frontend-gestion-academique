@@ -57,13 +57,10 @@ export const useCours = (initialFilters = {}) => {
         }
     }, [pagination.currentPage, pagination.perPage, filters]);
 
-    // Chargement initial et au changement de filtres
     useEffect(() => {
         fetchCours();
         return () => abortControllerRef.current?.abort();
     }, [fetchCours]);
-
-    // --- ACTIONS ---
 
     const createCours = useCallback(async (data) => {
         const res = await coursService.create(data);
@@ -83,8 +80,10 @@ export const useCours = (initialFilters = {}) => {
         return res;
     }, [fetchCours]);
 
-    const affecterProfesseurs = useCallback(async (coursId, ids) => {
-        const res = await coursService.affecterProfesseurs(coursId, ids);
+    // On s'assure que 'data' contient bien 'professeur_ids'
+    const affecterProfesseurs = useCallback(async (coursId, data) => {
+        // console.log("Envoi affectation pour cours:", coursId, "Data:", data);
+        const res = await coursService.affecterProfesseurs(coursId, data);
         await fetchCours();
         return res;
     }, [fetchCours]);

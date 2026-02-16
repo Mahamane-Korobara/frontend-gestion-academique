@@ -1,4 +1,4 @@
-import { coursAPI } from '../api/endpoints';
+import { coursAPI } from '@/lib/api/endpoints';
 
 export const coursService = {
     async getAll(params = {}) {
@@ -26,9 +26,8 @@ export const coursService = {
         return response;
     },
 
-    async affecterProfesseurs(coursId, professeursIds) {
-        // professeursIds est un tableau d'IDs [1, 5, 8]
-        const response = await coursAPI.affecterProfesseurs(coursId, { professeurs_ids: professeursIds });
+    async affecterProfesseurs(coursId, data) {
+        const response = await coursAPI.affecterProfesseurs(coursId, data);
         return response;
     },
 
