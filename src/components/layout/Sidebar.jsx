@@ -21,6 +21,7 @@ const MENU_CONFIG = {
         { title: 'Utilisateurs', icon: Users, href: '/utilisateurs' },
         { title: 'Filières & Niveaux', icon: Network, href: '/filieres-niveaux' },
         { title: 'Matières & Cours', icon: BookMarked, href: '/matieres-cours' },
+        { title: 'Emploi du Temps global', icon: Calendar, href: '/emploi-du-temps'},
         { title: 'Cycles Académiques', icon: Calendar, href: '/annees-academiques' },
         { title: 'Évolution & Barèmes', icon: TrendingUp, href: '/evaluations' },
         { title: 'Validation des Notes', icon: CheckCircle, href: '/notes' },
