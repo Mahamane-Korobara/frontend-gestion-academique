@@ -50,16 +50,16 @@ export default function ListPageLayout({
   uploadModalContent,
 }) {
   return (
-    <div>
+    <div className="flex min-h-0 flex-col">
       <Header 
         title={title}
         description={description}
         actions={actionButton}
       />
 
-      <main className="flex-1 p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6 overflow-y-auto">
+      <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
         {children}
-      </main>
+      </div>
 
       {/* Modal de création */}
       {createModal && createModalContent && (

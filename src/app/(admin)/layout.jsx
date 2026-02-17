@@ -1,6 +1,4 @@
-// src/app/(admin)/layout.jsx
 'use client';
-
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import useAuth from '@/lib/hooks/useAuth';
@@ -8,40 +6,53 @@ import Sidebar from '@/components/layout/Sidebar';
 import MobileSidebar from '@/components/layout/MobileSidebar';
 
 export default function AdminLayout({ children }) {
-  const router = useRouter();
-  const { isAuthenticated, hasRole, user, isHydrated } = useAuth();
+    const router = useRouter();
+    const { isAuthenticated, hasRole, user, isHydrated } = useAuth();
 
-  useEffect(() => {
-    if (!isHydrated) return;
+    useEffect(() => {
+        const previousHtmlOverflow = document.documentElement.style.overflow;
+        const previousBodyOverflow = document.body.style.overflow;
 
-    if (!isAuthenticated) {
-      router.replace('/login');
-      return;
-    }
-    if (user && !hasRole('admin')) {
-      const userRole = user.role?.name;
-      if (userRole === 'professeur') router.replace('/professeur/dashboard');
-      else if (userRole === 'etudiant') router.replace('/etudiant/dashboard');
-      else router.replace('/login');
-    }
-  }, [isHydrated, isAuthenticated, user, hasRole, router]);
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
 
-  if (!isHydrated) return null;
-  if (!isAuthenticated || !hasRole('admin')) return null;
+        return () => {
+            document.documentElement.style.overflow = previousHtmlOverflow;
+            document.body.style.overflow = previousBodyOverflow;
+        };
+    }, []);
 
-  return (
-    <div className="h-screen flex overflow-hidden">
-      {/* Sidebar Desktop fixe */}
-      <Sidebar />
+    useEffect(() => {
+        if (!isHydrated) return;
+        if (!isAuthenticated) {
+            router.replace('/login');
+            return;
+        }
+        if (user && !hasRole('admin')) {
+            const userRole = user.role?.name;
+            if (userRole === 'professeur') router.replace('/professeur/dashboard');
+            else if (userRole === 'etudiant') router.replace('/etudiant/dashboard');
+            else router.replace('/login');
+        }
+    }, [isHydrated, isAuthenticated, user, hasRole, router]);
 
-      {/* Sidebar Mobile (Tiroir caché par défaut) */}
-      <MobileSidebar />
+    if (!isHydrated) return null;
+    if (!isAuthenticated || !hasRole('admin')) return null;
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-auto bg-gray-50">
-          {children}
-        </main>
-      </div>
-    </div>
-  );
+    return (
+        <div className="h-screen flex overflow-hidden">
+            {/* Sidebar Desktop */}
+            <Sidebar />
+
+            {/* Sidebar Mobile */}
+            <MobileSidebar />
+
+            {/* Zone de contenu principale */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <main className="flex-1 min-h-0 overflow-y-auto bg-gray-50">
+                    {children}
+                </main>
+            </div>
+        </div>
+    );
 }

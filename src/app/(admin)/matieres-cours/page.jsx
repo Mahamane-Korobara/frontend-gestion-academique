@@ -5,6 +5,7 @@ import { useState } from 'react';
 import useModal from '@/lib/hooks/useModal';
 import ListPageLayout from '@/components/partage/ListPageLayout';
 import ListPageFilters from '@/components/partage/ListPageFilters';
+import DeleteConfirmModal from '@/components/partage/DeleteConfirmModal'; 
 import { useModalOperations } from '@/lib/hooks/useModalOperations';
 
 import useCours from '@/lib/hooks/useCours';
@@ -23,10 +24,14 @@ export default function CoursPage() {
     const [selectedCours, setSelectedCours] = useState(null);
     const [coursAffecter, setCoursAffecter] = useState(null);
     const [createKey, setCreateKey]         = useState(0);
+    
+    // État pour le retrait d'un professeur
+    const [retraitInfo, setRetraitInfo]     = useState(null);
 
     const editModal        = useModal();
     const deleteModal      = useModal();
     const affectationModal = useModal();
+    const retraitModal     = useModal();
 
     const {
         cours,
@@ -35,6 +40,7 @@ export default function CoursPage() {
         updateCours,
         deleteCours,
         affecterProfesseurs,
+        retirerProfesseur,
     } = useCours();
 
     const { niveauxOptions }                                      = useNiveaux();
@@ -77,12 +83,32 @@ export default function CoursPage() {
         affectationModal.open();
     };
 
-    const handleRetirer = (c) =>
-        handleSimpleOperation(
-            () => affecterProfesseurs(c.id, { professeur_ids: [] }),
+    // Préparation du retrait avec le Modal
+    const handleRetirerClick = (row) => {
+        const coursId = row?.cours?.id || row?.id;
+        const profId = row?.prof?.id || (row?.professeurs?.length > 0 ? row.professeurs[0].id : null);
+        const nomProf = row?.prof?.nom_complet || row?.professeurs?.[0]?.nom_complet || "le professeur";
+
+        if (!coursId || !profId) return;
+
+        setRetraitInfo({ coursId, profId, nomProf });
+        retraitModal.open();
+    };
+
+    const onConfirmRetrait = async () => {
+        if (!retraitInfo) return;
+        
+        const result = await handleSimpleOperation(
+            () => retirerProfesseur(retraitInfo.coursId, retraitInfo.profId),
             'Professeur retiré avec succès',
             'Erreur lors du retrait'
         );
+
+        if (result.success) {
+            retraitModal.close();
+            setRetraitInfo(null);
+        }
+    };
 
     //  CRUD
     const onCreateCours = (data) => {
@@ -126,7 +152,6 @@ export default function CoursPage() {
         }
     };
 
-    //  Props formulaires 
     const formCommonProps = {
         serverErrors:      validationErrors,
         loading:           isSubmitting,
@@ -142,7 +167,6 @@ export default function CoursPage() {
     ];
 
     return (
-        <>
             <ListPageLayout
                 title="Gestion des cours"
                 description="Gérez les cours et les affectations professeurs."
@@ -168,9 +192,24 @@ export default function CoursPage() {
                 deleteModalItemName={selectedCours?.titre}
                 onDeleteConfirm={onDeleteCours}
             >
-                {/* ── Formulaire création — toujours visible ── */}
+                {/* ──Onglets et Filtres en premier (Position haute) ── */}
+                <ListPageFilters
+                    tabs={tabs}
+                    activeTab={activeTab}
+                    onTabChange={handleTabChange}
+                    searchValue={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    searchPlaceholder={
+                        activeTab === 'cours'
+                            ? 'Titre, code ou niveau...'
+                            : 'Cours ou professeur...'
+                    }
+                    onReset={() => setSearchQuery('')}
+                />
+
+                {/* ──Formulaire de création (Apparaît sous les filtres si onglet cours) ── */}
                 {activeTab === 'cours' && (
-                    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm mb-6">
+                    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm my-6">
                         <div className="mb-5">
                             <h2 className="text-base font-bold text-gray-800">Nouveau cours</h2>
                             <p className="text-sm text-gray-400 mt-0.5">
@@ -186,20 +225,7 @@ export default function CoursPage() {
                     </div>
                 )}
 
-                <ListPageFilters
-                    tabs={tabs}
-                    activeTab={activeTab}
-                    onTabChange={handleTabChange}
-                    searchValue={searchQuery}
-                    onSearchChange={setSearchQuery}
-                    searchPlaceholder={
-                        activeTab === 'cours'
-                            ? 'Titre, code ou niveau...'
-                            : 'Cours ou professeur...'
-                    }
-                    onReset={() => setSearchQuery('')}
-                />
-
+                {/* ── Listes de données ── */}
                 <div className="mt-4">
                     {activeTab === 'cours' && (
                         <CoursSection
@@ -218,13 +244,11 @@ export default function CoursPage() {
                             loading={coursLoading}
                             searchQuery={searchQuery}
                             onReaffecter={handleAffecter}
-                            onRetirer={handleRetirer}
+                            onRetirer={handleRetirerClick} 
                         />
                     )}
                 </div>
-            </ListPageLayout>
-
-            {/* Modal affectation responsive */}
+                {/* Modal Affectation */}
             {affectationModal.isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-4 sm:p-6">
@@ -248,6 +272,27 @@ export default function CoursPage() {
                     </div>
                 </div>
             )}
-        </>
+
+            {/* Modal de Confirmation de Retrait (Utilise ton composant DeleteConfirmModal) */}
+            <DeleteConfirmModal
+                isOpen={retraitModal.isOpen}
+                onClose={() => {
+                    retraitModal.close();
+                    setRetraitInfo(null);
+                }}
+                onConfirm={onConfirmRetrait}
+                loading={isSubmitting}
+                title="Confirmer le retrait"
+                message={
+                    retraitInfo ? (
+                        <>
+                            Êtes-vous sûr de vouloir retirer <span className="font-semibold text-gray-900">{retraitInfo.nomProf}</span> de ce cours ?
+                        </>
+                    ) : null
+                }
+            />
+            </ListPageLayout>
+
+            
     );
 }

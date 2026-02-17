@@ -30,6 +30,7 @@ export default function Modal({
   className,
 }) {
   const modalRef = useRef(null);
+  const previousBodyOverflowRef = useRef('');
 
   // Tailles prédéfinies
   const sizes = {
@@ -53,12 +54,13 @@ export default function Modal({
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
       // Bloquer le scroll du body
+      previousBodyOverflowRef.current = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = previousBodyOverflowRef.current;
     };
   }, [isOpen, onClose]);
 

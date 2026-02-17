@@ -88,6 +88,12 @@ export const useCours = (initialFilters = {}) => {
         return res;
     }, [fetchCours]);
 
+    const retirerProfesseur = useCallback(async (coursId, professeurId) => {
+        const res = await coursService.retirerProfesseur(coursId, professeurId);
+        await fetchCours(); // Rafraîchir la liste après retrait
+        return res;
+    }, [fetchCours]);
+
     const updateFilters = useCallback((newFilters) => {
         setFilters(prev => ({ ...prev, ...newFilters }));
         setPagination(prev => ({ ...prev, currentPage: 1 }));
@@ -105,6 +111,7 @@ export const useCours = (initialFilters = {}) => {
         updateCours,
         deleteCours,
         affecterProfesseurs,
+        retirerProfesseur,
         refetch: fetchCours
     };
 };
