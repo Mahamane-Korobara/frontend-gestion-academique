@@ -2,6 +2,8 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME;
 
+import { BookOpen, Users, FlaskConical, GraduationCap } from 'lucide-react';
+
 // Rôles utilisateurs
 export const USER_ROLES = {
     ADMIN: 'admin',
@@ -65,6 +67,19 @@ export const PRIORITES_ANNONCE = {
     NORMALE: 2,
     HAUTE: 3,
 };
+
+export const JOURS_ORDRE = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+export const JOURS_COURTS = { Lundi: 'Lun', Mardi: 'Mar', Mercredi: 'Mer', Jeudi: 'Jeu', Vendredi: 'Ven', Samedi: 'Sam' };
+
+export const TYPE_STYLES = {
+    blue: { card: 'bg-blue-50 border-blue-200', badge: 'bg-blue-100 text-blue-700', dot: 'bg-blue-500' },
+    green: { card: 'bg-emerald-50 border-emerald-200', badge: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+    purple: { card: 'bg-violet-50 border-violet-200', badge: 'bg-violet-100 text-violet-700', dot: 'bg-violet-500' },
+    red: { card: 'bg-rose-50 border-rose-200', badge: 'bg-rose-100 text-rose-700', dot: 'bg-rose-500' },
+};
+export const TYPE_LABELS = { blue: 'Cours', green: 'TD', purple: 'TP', red: 'Examen' };
+export const TYPE_ICONS = { cours: BookOpen, td: Users, tp: FlaskConical, examen: GraduationCap };
+
 
 // Pagination
 export const ITEMS_PER_PAGE = parseInt(
