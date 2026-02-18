@@ -355,7 +355,7 @@ export default function UserForm({
               required
               placeholder="PROF2025001"
             />
-            {/* 🚧 CHAMPS OPTIONNELS MIS EN SUSPENS 🚧
+            {/* Données optionnelles mises en suspens
             <FormSelect
               id="specialite"
               label="Spécialité (optionnel)"

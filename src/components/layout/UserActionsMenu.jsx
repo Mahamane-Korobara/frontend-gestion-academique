@@ -9,7 +9,7 @@ import ActionsMenu from '@/components/partage/ActionsMenu';
  */
 function isEtudiant(user) {
     if (!user) return false;
-    // ✅ Structure réelle de l'API : user.role.name
+    // Structure réelle de l'API : user.role.name
     if (user.role?.name === 'etudiant')  return true;
     // Fallbacks pour d'autres structures possibles
     if (user.role === 'etudiant')        return true;

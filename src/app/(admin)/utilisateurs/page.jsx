@@ -26,7 +26,7 @@ import useFilieres            from '@/lib/hooks/useFilieres';
 import useNiveaux             from '@/lib/hooks/useNiveaux';
 import { useMessages }        from '@/lib/hooks/useMessages';
 import { useModalOperations } from '@/lib/hooks/useModalOperations';
-import useInscriptions        from '@/lib/hooks/useInscriptions'; // ✅
+import useInscriptions        from '@/lib/hooks/useInscriptions'; // 
 
 // Utilitaires
 import {
@@ -47,13 +47,13 @@ export default function UtilisateursPage() {
     const [messageModalUser, setMessageModalUser]     = useState(null);
     const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
 
-    // ── Modals ──────────────────────────────────────────────────────────────
+    // Modals
     const createModal      = useModal();
     const editModal        = useModal();
     const deleteModal      = useModal();
     const inscriptionModal = useModal();
 
-    // ── Hooks data ───────────────────────────────────────────────────────────
+    // Hooks data
     const { users, loading: usersLoading, createUser, updateUser, deleteUser, resetPassword } = useUsers();
     const { createMessage, loadConversation, fetchUnreadCount } = useMessages();
     const { activeFilieresOptions, loading: filieresLoading }   = useFilieres();
@@ -61,16 +61,16 @@ export default function UtilisateursPage() {
 
     const { isSubmitting, handleCreate, handleUpdate, handleDelete, handleSimpleOperation } = useModalOperations();
 
-    // ✅ Hook inscriptions dédié
+    //  Hook inscriptions dédié
     const { inscrireCoursNiveau, isSubmitting: isInscribing } = useInscriptions();
 
-    // ── Données filtrées ─────────────────────────────────────────────────────
+    // Données filtrées
     const filteredData = useMemo(
         () => filterUsers(users, activeTab, searchQuery, selectedFilters),
         [users, activeTab, searchQuery, selectedFilters]
     );
 
-    // ── Filtres ───────────────────────────────────────────────────────────────
+    // Filtres
     const resetFilters    = () => { setSearchQuery(''); setSelectedFilters({}); };
     const handleTabChange = (tab) => { setActiveTab(tab); resetFilters(); };
     const updateFilter    = (key, value) => setSelectedFilters(prev => ({ ...prev, [key]: value }));
@@ -80,7 +80,7 @@ export default function UtilisateursPage() {
         [activeTab, activeFilieresOptions]
     );
 
-    // ── CRUD ──────────────────────────────────────────────────────────────────
+    // CRUD
     const onCreateUser = (formData) =>
         handleCreate(createUser, formData, createModal, 'Utilisateur créé avec succès');
 
@@ -104,7 +104,7 @@ export default function UtilisateursPage() {
             'Erreur lors de la réinitialisation'
         );
 
-    // ── Message ───────────────────────────────────────────────────────────────
+    // Message
     const handleSendMessage = (user) => { setMessageModalUser(user); setIsMessageModalOpen(true); };
 
     const handleSendMessageAndCreateConversation = async (userId, messageContent) => {
@@ -121,7 +121,7 @@ export default function UtilisateursPage() {
         return result.success;
     };
 
-    // ── Inscription niveau ────────────────────────────────────────────────────
+    // Inscription niveau
     const handleInscrireNiveau = (user) => {
         setSelectedUser(user);
         inscriptionModal.open();
@@ -139,13 +139,13 @@ export default function UtilisateursPage() {
         return result;
     };
 
-    // ── Onglets ───────────────────────────────────────────────────────────────
+    // Onglets
     const tabs = [
         { id: 'etudiant',   label: 'Étudiants',  count: countUsersByRole(users, 'etudiant') },
         { id: 'professeur', label: 'Professeurs', count: countUsersByRole(users, 'professeur') },
     ];
 
-    // ── Colonnes ──────────────────────────────────────────────────────────────
+    // Colonnes
     const columns = [
         {
             key: 'user-identity',

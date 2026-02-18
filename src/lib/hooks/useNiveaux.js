@@ -73,11 +73,11 @@ export const useNiveaux = () => {
         value: String(n.id),
         label: n.nom || `Niveau ${n.id}`,
         id: n.id,
-        // ✅ filiere_id extrait depuis l'objet filiere imbriqué
+        // filiere_id extrait depuis l'objet filiere imbriqué
         filiere_id: n.filiere?.id ?? n.filiere_id,
     }));
 
-    // ✅ Correctif : filtrer par n.filiere?.id (structure réelle de l'API)
+    // filtrer par n.filiere?.id (structure réelle de l'API)
     const getNiveauxByFiliere = useCallback((filiereId) => {
         if (!filiereId) return [];
         return niveaux
