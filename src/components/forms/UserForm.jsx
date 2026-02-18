@@ -40,7 +40,6 @@ export default function UserForm({
 
   const [errors, setErrors] = useState({});
 
-  // Après la déclaration de errors
   const flattenServerErrors = (serverErrs) => {
     const flat = {};
     Object.entries(serverErrs).forEach(([key, messages]) => {
@@ -50,7 +49,6 @@ export default function UserForm({
     return flat;
   };
 
-  // Fusion des erreurs client + serveur (déclarée après errors)
   const allErrors = { ...errors, ...flattenServerErrors(serverErrors) };
 
   useEffect(() => {
@@ -80,7 +78,6 @@ export default function UserForm({
     });
   }, [user]);
 
-  // Niveaux filtrés par filière
   const filteredNiveaux = useMemo(() => {
     if (!formData.filiere_id) return niveauxOptions;
     const byFiliere = getNiveauxByFiliere(formData.filiere_id);
@@ -135,28 +132,22 @@ export default function UserForm({
         sexe: formData.sexe,
         filiere_id: Number(formData.filiere_id),
         niveau_id: Number(formData.niveau_id),
-        ...(formData.lieu_naissance && {
-          lieu_naissance: formData.lieu_naissance,
-        }),
+        ...(formData.lieu_naissance && { lieu_naissance: formData.lieu_naissance }),
         ...(formData.adresse && { adresse: formData.adresse }),
-        ...(formData.email_personnel && {
-          email_personnel: formData.email_personnel,
-        }),
-        ...(formData.telephone_etudiant && {
-          telephone: formData.telephone_etudiant,
-        }),
-        ...(formData.telephone_urgence && {
-          telephone_urgence: formData.telephone_urgence,
-        }),
+        ...(formData.email_personnel && { email_personnel: formData.email_personnel }),
+        ...(formData.telephone_etudiant && { telephone: formData.telephone_etudiant }),
+        ...(formData.telephone_urgence && { telephone_urgence: formData.telephone_urgence }),
       };
     } else {
       submitData.professeur = {
         code_professeur: formData.code_professeur,
         nom: formData.nom,
         prenom: formData.prenom,
+        /* Données optionnelles mises en suspens
         ...(formData.specialite && { specialite: formData.specialite }),
         ...(formData.grade && { grade: formData.grade }),
         ...(formData.bio && { bio: formData.bio }),
+        */
       };
     }
     onSubmit?.(submitData);
@@ -164,7 +155,6 @@ export default function UserForm({
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Effacer l'erreur client ET serveur sur modification
     if (allErrors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
@@ -177,9 +167,7 @@ export default function UserForm({
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Compte */}
       <div className="space-y-4">
-        <h3 className="text-sm font-bold tracking-wide text-gray-700 uppercase">
-          Compte
-        </h3>
+        <h3 className="text-sm font-bold tracking-wide text-gray-700 uppercase">Compte</h3>
         <FormInput
           id="email"
           label="Adresse email"
@@ -208,9 +196,7 @@ export default function UserForm({
 
       {/* Identité */}
       <div className="space-y-4 border-t border-gray-200 pt-4">
-        <h3 className="text-sm font-bold tracking-wide text-gray-700 uppercase">
-          Identité
-        </h3>
+        <h3 className="text-sm font-bold tracking-wide text-gray-700 uppercase">Identité</h3>
         <div className="grid grid-cols-2 gap-3">
           <FormInput
             id="prenom"
@@ -238,9 +224,7 @@ export default function UserForm({
       {/* Infos spécifiques */}
       <div className="space-y-4 border-t border-gray-200 pt-4">
         <h3 className="text-sm font-bold tracking-wide text-gray-700 uppercase">
-          {formData.role === 'etudiant'
-            ? 'Informations étudiant'
-            : 'Informations professeur'}
+          {formData.role === 'etudiant' ? 'Informations étudiant' : 'Informations professeur'}
         </h3>
 
         {formData.role === 'etudiant' ? (
@@ -299,11 +283,7 @@ export default function UserForm({
                 value={formData.niveau_id}
                 onValueChange={(v) => handleChange('niveau_id', v)}
                 options={filteredNiveaux}
-                placeholder={
-                  formData.filiere_id
-                    ? 'Choisir un niveau'
-                    : "D'abord une filière"
-                }
+                placeholder={formData.filiere_id ? 'Choisir un niveau' : "D'abord une filière"}
                 error={allErrors.niveau_id}
                 disabled={loading || !formData.filiere_id}
                 required
@@ -318,9 +298,7 @@ export default function UserForm({
                   id="lieu_naissance"
                   label="Lieu de naissance"
                   value={formData.lieu_naissance}
-                  onChange={(e) =>
-                    handleChange('lieu_naissance', e.target.value)
-                  }
+                  onChange={(e) => handleChange('lieu_naissance', e.target.value)}
                   error={allErrors.lieu_naissance}
                   disabled={loading}
                   placeholder="Ex: Alger"
@@ -338,9 +316,7 @@ export default function UserForm({
                   label="Email personnel"
                   type="email"
                   value={formData.email_personnel}
-                  onChange={(e) =>
-                    handleChange('email_personnel', e.target.value)
-                  }
+                  onChange={(e) => handleChange('email_personnel', e.target.value)}
                   error={allErrors.email_personnel}
                   disabled={loading}
                 />
@@ -350,9 +326,7 @@ export default function UserForm({
                     label="Téléphone"
                     type="tel"
                     value={formData.telephone_etudiant}
-                    onChange={(e) =>
-                      handleChange('telephone_etudiant', e.target.value)
-                    }
+                    onChange={(e) => handleChange('telephone_etudiant', e.target.value)}
                     error={allErrors.telephone_etudiant}
                     disabled={loading}
                   />
@@ -361,9 +335,7 @@ export default function UserForm({
                     label="Tél. urgence"
                     type="tel"
                     value={formData.telephone_urgence}
-                    onChange={(e) =>
-                      handleChange('telephone_urgence', e.target.value)
-                    }
+                    onChange={(e) => handleChange('telephone_urgence', e.target.value)}
                     error={allErrors.telephone_urgence}
                     disabled={loading}
                   />
@@ -383,6 +355,7 @@ export default function UserForm({
               required
               placeholder="PROF2025001"
             />
+            {/* 🚧 CHAMPS OPTIONNELS MIS EN SUSPENS 🚧
             <FormSelect
               id="specialite"
               label="Spécialité (optionnel)"
@@ -401,10 +374,7 @@ export default function UserForm({
               options={[
                 { value: 'Assistant', label: 'Assistant' },
                 { value: 'Maître assistant', label: 'Maître assistant' },
-                {
-                  value: 'Maître de conférences',
-                  label: 'Maître de conférences',
-                },
+                { value: 'Maître de conférences', label: 'Maître de conférences' },
                 { value: 'Professeur', label: 'Professeur' },
               ]}
               placeholder="Sélectionner"
@@ -420,18 +390,14 @@ export default function UserForm({
               disabled={loading}
               placeholder="Courte biographie..."
             />
+            */}
           </>
         )}
       </div>
 
       {/* Actions */}
       <div className="flex justify-end gap-3 pt-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={loading}
-        >
+        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
           Annuler
         </Button>
         <Button type="submit" disabled={loading} className="min-w-30">

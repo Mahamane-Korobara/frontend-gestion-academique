@@ -11,7 +11,6 @@ export const useNiveaux = () => {
     const abortControllerRef = useRef(null);
     const initialFetchDone = useRef(false);
 
-    // La fonction de fetch principale (automatisée)
     const fetchAllNiveaux = useCallback(async () => {
         if (abortControllerRef.current) abortControllerRef.current.abort();
         abortControllerRef.current = new AbortController();
@@ -29,20 +28,15 @@ export const useNiveaux = () => {
                 setError(err);
             }
         } finally {
-            if (!abortControllerRef.current?.signal.aborted) {
-                setLoading(false);
-            }
+            if (!abortControllerRef.current?.signal.aborted) setLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        if (!initialFetchDone.current) {
-            fetchAllNiveaux();
-        }
+        if (!initialFetchDone.current) fetchAllNiveaux();
         return () => abortControllerRef.current?.abort();
     }, [fetchAllNiveaux]);
 
-    // Charger les niveaux d'une filière spécifique (API Filter)
     const fetchByFiliere = useCallback(async (filiereId) => {
         if (!filiereId) return [];
         setLoading(true);
@@ -57,10 +51,9 @@ export const useNiveaux = () => {
         }
     }, []);
 
-    // CRUD Operations
     const createNiveau = useCallback(async (data) => {
         const res = await niveauxService.create(data);
-        await fetchAllNiveaux(); // Rafraîchit la liste globale
+        await fetchAllNiveaux();
         return res;
     }, [fetchAllNiveaux]);
 
@@ -76,22 +69,23 @@ export const useNiveaux = () => {
         return res;
     }, [fetchAllNiveaux]);
 
-    // 5. HELPERS pour les Selects
     const niveauxOptions = niveaux.map(n => ({
         value: String(n.id),
         label: n.nom || `Niveau ${n.id}`,
         id: n.id,
-        filiere_id: n.filiere_id
+        // ✅ filiere_id extrait depuis l'objet filiere imbriqué
+        filiere_id: n.filiere?.id ?? n.filiere_id,
     }));
 
+    // ✅ Correctif : filtrer par n.filiere?.id (structure réelle de l'API)
     const getNiveauxByFiliere = useCallback((filiereId) => {
         if (!filiereId) return [];
         return niveaux
-            .filter(n => String(n.filiere_id) === String(filiereId))
+            .filter(n => String(n.filiere?.id ?? n.filiere_id) === String(filiereId))
             .map(n => ({
                 value: String(n.id),
                 label: n.nom || `Niveau ${n.id}`,
-                id: n.id
+                id: n.id,
             }));
     }, [niveaux]);
 
