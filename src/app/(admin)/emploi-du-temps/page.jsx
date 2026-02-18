@@ -1,147 +1,70 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 
-import useModal            from '@/lib/hooks/useModal';
-import ListPageLayout      from '@/components/partage/ListPageLayout';
-import ListPageFilters     from '@/components/partage/ListPageFilters';
+import useModal              from '@/lib/hooks/useModal';
+import ListPageLayout        from '@/components/partage/ListPageLayout';
+import ListPageFilters       from '@/components/partage/ListPageFilters';
 import { useModalOperations } from '@/lib/hooks/useModalOperations';
 
-import useNiveaux     from '@/lib/hooks/useNiveaux';
-import useSemestres   from '@/lib/hooks/useSemestres';
-import useProfesseurs from '@/lib/hooks/useProfesseurs';
-import useFilieres    from '@/lib/hooks/useFilieres';
-import useCours       from '@/lib/hooks/useCours';
+import useNiveaux    from '@/lib/hooks/useNiveaux';
+import useSemestres  from '@/lib/hooks/useSemestres';
+import useFilieres   from '@/lib/hooks/useFilieres';
+import useCours      from '@/lib/hooks/useCours';
 
-import { emploiDuTempsAdminAPI } from '@/lib/api/endpoints';
+// Hook et service extraits
+import useEmploiDuTemps from '@/lib/hooks/useEmploiDuTemps';
 
 import CreneauForm       from '@/components/calendrier/CreneauForm';
 import CalendrierSection from '@/components/calendrier/CalendrierSection';
 
-// ─── Hook local ────────────────────────────────────────────────────────────────
-function useEmploiDuTemps() {
-    const [creneaux, setCreneaux] = useState([]);
-    const [loading, setLoading]   = useState(false);
-    const [filters, setFilters]   = useState({
-        niveau_id:   null,
-        semestre_id: null,
-        filiere_id:  null, // ✅ filière (filtre local, pas envoyé au backend)
-        cours_id:    null, // ✅ cours (filtre local, pas envoyé au backend)
-    });
-    const abortRef = useRef(null);
-
-    const fetchCreneaux = useCallback(async () => {
-        if (abortRef.current) abortRef.current.abort();
-        abortRef.current = new AbortController();
-        setLoading(true);
-        try {
-            // ✅ FIX : N'envoyer QUE les filtres avec valeur au backend
-            // filiere_id et cours_id sont filtrés côté frontend
-            const params = {};
-            if (filters.niveau_id)   params.niveau_id   = filters.niveau_id;
-            if (filters.semestre_id) params.semestre_id = filters.semestre_id;
-            // ✅ NE PAS envoyer '' ou null — le backend le rejette pour "Tous"
-
-            const res = await emploiDuTempsAdminAPI.getAll(params);
-            if (!abortRef.current.signal.aborted) {
-                setCreneaux(res?.data || res || []);
-            }
-        } catch (err) {
-            if (err.name !== 'AbortError') console.error('Erreur emploi du temps:', err);
-        } finally {
-            if (!abortRef.current?.signal.aborted) setLoading(false);
-        }
-    }, [filters.niveau_id, filters.semestre_id]); // ✅ Seulement ces 2 déclenchent un fetch
-
-    useEffect(() => {
-        fetchCreneaux();
-        return () => abortRef.current?.abort();
-    }, [fetchCreneaux]);
-
-    const createCreneau = useCallback(async (data) => {
-        const res = await emploiDuTempsAdminAPI.create(data);
-        await fetchCreneaux();
-        return res;
-    }, [fetchCreneaux]);
-
-    const deleteCreneau = useCallback(async (id) => {
-        const res = await emploiDuTempsAdminAPI.delete(id);
-        await fetchCreneaux();
-        return res;
-    }, [fetchCreneaux]);
-
-    return { creneaux, loading, filters, setFilters, createCreneau, deleteCreneau };
-}
-
-// ─── Page ──────────────────────────────────────────────────────────────────────
 export default function EmploiDuTempsPage() {
-    const [activeTab, setActiveTab] = useState('creation');
-    const [createKey, setCreateKey] = useState(0);
-
+    const [activeTab, setActiveTab]       = useState('creation');
+    const [createKey, setCreateKey]       = useState(0);
     const [selectedCreneau, setSelectedCreneau] = useState(null);
+
     const deleteModal = useModal();
 
+    // Tout l'état emploi du temps vient du hook
     const {
-        creneaux, loading: creneauxLoading,
-        filters, setFilters,
-        createCreneau, deleteCreneau,
+        creneaux,
+        loading: creneauxLoading,
+        filters,
+        updateFilter,
+        resetFilters,
+        createCreneau,
+        deleteCreneau,
     } = useEmploiDuTemps();
 
+    // Data Hooks
     const { niveauxOptions }                               = useNiveaux();
     const { semestresOptions, semestreActif, anneeActive } = useSemestres();
-    const { professeursOptions }                           = useProfesseurs();
     const { activeFilieresOptions }                        = useFilieres();
     const { cours }                                        = useCours();
 
     const { isSubmitting, validationErrors, handleCreate, handleDelete } = useModalOperations();
 
-    // ✅ Options cours pour le filtre calendrier
+    // Options pour le filtre "Cours" dans le calendrier
     const coursOptions = useMemo(() =>
         cours.map(c => ({ value: String(c.id), label: c.titre })),
     [cours]);
 
-    // ✅ Filtrage LOCAL côté frontend (filière + cours)
-    // Les filtres niveau/semestre sont envoyés au backend
-    const creneauxFiltres = useMemo(() => {
-        let result = creneaux;
-
-        // Filtre filière : comparer via le niveau du créneau
-        if (filters.filiere_id) {
-            result = result.filter(c =>
-                String(c.niveau?.filiere_id) === String(filters.filiere_id)
-            );
-        }
-
-        // Filtre cours
-        if (filters.cours_id) {
-            result = result.filter(c =>
-                String(c.cours_id || c.cours?.id) === String(filters.cours_id)
-            );
-        }
-
-        return result;
-    }, [creneaux, filters.filiere_id, filters.cours_id]);
-
-    // ─── Handlers filtres ──────────────────────────────────────────────────────
-    const handleFiltreFiliere  = (v) => setFilters(f => ({ ...f, filiere_id:  v }));
-    const handleFiltreNiveau   = (v) => setFilters(f => ({ ...f, niveau_id:   v }));
-    // ✅ FIX semestre : null = "Tous" (ne sera pas envoyé au backend)
-    const handleFiltreSemestre = (v) => setFilters(f => ({ ...f, semestre_id: v }));
-    const handleFiltreCours    = (v) => setFilters(f => ({ ...f, cours_id:    v }));
-
-    // ─── Création ──────────────────────────────────────────────────────────────
     const onCreateCreneau = (data) =>
         handleCreate(
             createCreneau,
             data,
-            { close: () => setCreateKey(k => k + 1) },
+            {
+                close: () => {
+                    setCreateKey(k => k + 1);
+                    setActiveTab('calendrier');
+                },
+            },
             'Créneau créé avec succès'
         );
 
-    // ─── Suppression ───────────────────────────────────────────────────────────
     const handleDeleteClick = (id) => {
         const creneau = creneaux.find(c => c.id === id);
-        setSelectedCreneau(creneau || { id, cours: null });
+        setSelectedCreneau(creneau || { id });
         deleteModal.open();
     };
 
@@ -154,11 +77,9 @@ export default function EmploiDuTempsPage() {
             () => setSelectedCreneau(null)
         );
 
-    const creneauDeleteName = selectedCreneau
-        ? selectedCreneau.cours?.titre
-            ? `${selectedCreneau.cours.titre} — ${selectedCreneau.jour} ${selectedCreneau.creneau?.debut}–${selectedCreneau.creneau?.fin}`
-            : `Créneau #${selectedCreneau.id}`
-        : '';
+    const creneauDeleteName = selectedCreneau?.cours?.titre
+        ? `${selectedCreneau.cours.titre} (${selectedCreneau.jour})`
+        : 'ce créneau';
 
     const tabs = [
         { id: 'creation',   label: 'Créer un créneau' },
@@ -168,59 +89,56 @@ export default function EmploiDuTempsPage() {
     return (
         <ListPageLayout
             title="Emploi du temps"
-            description="Planifiez les créneaux horaires des cours par niveau et semestre."
+            description="Gérez les horaires de cours par filière, niveau et semestre."
             deleteModal={deleteModal}
             isSubmitting={isSubmitting}
             selectedItem={selectedCreneau}
             deleteModalItemName={creneauDeleteName}
             onDeleteConfirm={onConfirmDelete}
         >
-            {/* Tabs */}
             <ListPageFilters
                 tabs={tabs}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
-                hideSearch
-                onReset={() => {}}
+                hideSearch={true}
+                showResetButton={true}
+                onReset={resetFilters}
             />
 
-            {/* Onglet création */}
+            {/* VUE : FORMULAIRE DE CRÉATION */}
             {activeTab === 'creation' && (
-                <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
+                <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm animate-in fade-in slide-in-from-bottom-2">
                     <div className="mb-5">
-                        <h2 className="text-base font-bold text-gray-800">Nouveau créneau</h2>
-                        <p className="text-sm text-gray-400 mt-0.5">
-                            Assignez un cours, un professeur, un jour et des horaires.
+                        <h2 className="text-base font-bold text-gray-800">Planifier une séance</h2>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                            Sélectionnez un cours — les informations associées s'afficheront automatiquement.
                         </p>
                     </div>
                     <CreneauForm
                         key={createKey}
                         serverErrors={validationErrors}
                         loading={isSubmitting}
-                        niveauxOptions={niveauxOptions}
-                        semestresOptions={semestresOptions}
-                        professeursOptions={professeursOptions}
-                        semestreActif={semestreActif}
+                        anneeActive={anneeActive}
                         onSubmit={onCreateCreneau}
                     />
                 </div>
             )}
 
-            {/* Onglet calendrier */}
+            {/* VUE : CALENDRIER INTERACTIF */}
             {activeTab === 'calendrier' && (
-                <div className="mt-4">
+                <div className="mt-4 animate-in fade-in slide-in-from-bottom-2">
                     <CalendrierSection
-                        creneaux={creneauxFiltres}
+                        creneaux={creneaux}
                         loading={creneauxLoading}
                         niveauxOptions={niveauxOptions}
                         semestresOptions={semestresOptions}
                         filieresOptions={activeFilieresOptions}
                         coursOptions={coursOptions}
                         filters={filters}
-                        onFiltreFiliere={handleFiltreFiliere}
-                        onFiltreNiveau={handleFiltreNiveau}
-                        onFiltreSemestre={handleFiltreSemestre}
-                        onFiltreCours={handleFiltreCours}
+                        onFiltreFiliere={(v) => updateFilter('filiere_id',  v)}
+                        onFiltreNiveau={(v)   => updateFilter('niveau_id',   v)}
+                        onFiltreSemestre={(v) => updateFilter('semestre_id', v)}
+                        onFiltreCours={(v)    => updateFilter('cours_id',    v)}
                         onDelete={handleDeleteClick}
                     />
                 </div>

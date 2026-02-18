@@ -32,7 +32,7 @@ export default function ListPageFilters({
       {(!hideSearch || filterOptions.length > 0) && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-4">
           
-          {/* 1. Bloc Recherche (affiché seulement si !hideSearch) */}
+          {/* loc Recherche (affiché seulement si !hideSearch) */}
           {!hideSearch && (
             <div className="flex gap-3">
               <Input
@@ -50,7 +50,7 @@ export default function ListPageFilters({
             </div>
           )}
 
-          {/* 2. Bloc Filtres */}
+          {/* Bloc Filtres */}
           {filterOptions.length > 0 && (
             <div className={`flex flex-wrap items-center gap-3 ${inlineFilters ? 'flex-row' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'}`}>
               
@@ -66,7 +66,7 @@ export default function ListPageFilters({
                     id={filter.key}
                     value={selectedFilters[filter.key] || ''}
                     onValueChange={(value) => onFilterChange?.(filter.key, value)}
-                    options={[{ value: '', label: `Tous les ${filter.label?.toLowerCase() || ''}` }, ...(filter.options || [])]}
+                    options={filter.options || []}
                     placeholder={filter.placeholder || filter.label}
                   />
                 </div>

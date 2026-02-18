@@ -54,6 +54,24 @@ export const TYPES_EVALUATION = {
     TP: 'tp',
 };
 
+// Valeurs exactes de l'enum JourSemaine PHP (majuscule)
+export const JOURS = [
+    { value: 'Lundi', label: 'Lundi' },
+    { value: 'Mardi', label: 'Mardi' },
+    { value: 'Mercredi', label: 'Mercredi' },
+    { value: 'Jeudi', label: 'Jeudi' },
+    { value: 'Vendredi', label: 'Vendredi' },
+    { value: 'Samedi', label: 'Samedi' },
+];
+
+// Valeurs exactes de l'enum TypeSeance PHP (minuscule)
+export const TYPES_SEANCE = [
+    { value: 'cours', label: 'Cours magistral' },
+    { value: 'td', label: 'Travaux Dirigés' },
+    { value: 'tp', label: 'Travaux Pratiques' },
+    { value: 'examen', label: 'Examen' },
+];
+
 // Types d'annonce
 export const TYPES_ANNONCE = {
     INFO: 'info',
