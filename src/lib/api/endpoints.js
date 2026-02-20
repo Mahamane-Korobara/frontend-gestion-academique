@@ -76,7 +76,7 @@ export const anneesAcademiquesAPI = {
     delete: (id) => apiClient.delete(`/admin/annees-academiques/${id}`),
     activate: (id) => apiClient.post(`/admin/annees-academiques/${id}/activate`),
     close: (id) => apiClient.post(`/admin/annees-academiques/${id}/close`),
-    createSemestres: (id) => apiClient.post(`/admin/annees-academiques/${id}/create-semestres`),
+    // createSemestres: (id) => apiClient.post(`/admin/annees-academiques/${id}/create-semestres`),
 };
 
 // ============================================
