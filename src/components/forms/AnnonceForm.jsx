@@ -381,6 +381,7 @@ export default function AnnonceForm() {
                   error={errors.type}
                   disabled={isSubmitting || optionsLoading}
                   required
+                  onCloseAutoFocus={(e) => e.preventDefault()}
                 />
 
                 {/* Priorité */}
@@ -397,6 +398,7 @@ export default function AnnonceForm() {
                   error={errors.priorite}
                   disabled={isSubmitting || optionsLoading}
                   required
+                  onCloseAutoFocus={(e) => e.preventDefault()}
                 />
               </div>
 
@@ -412,6 +414,7 @@ export default function AnnonceForm() {
                   error={errors.filiere_id}
                   disabled={isSubmitting || optionsLoading}
                   required
+                  onCloseAutoFocus={(e) => e.preventDefault()}
                 />
               )}
 
@@ -426,6 +429,7 @@ export default function AnnonceForm() {
                   error={errors.niveau_id}
                   disabled={isSubmitting || optionsLoading}
                   required
+                  onCloseAutoFocus={(e) => e.preventDefault()}
                 />
               )}
 
@@ -440,6 +444,7 @@ export default function AnnonceForm() {
                   error={errors.cours_id}
                   disabled={isSubmitting || optionsLoading}
                   required
+                  onCloseAutoFocus={(e) => e.preventDefault()}
                 />
               )}
 
