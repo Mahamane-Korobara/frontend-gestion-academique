@@ -37,6 +37,7 @@ export default function FormSelect({
         value={value}
         onValueChange={onValueChange}
         disabled={disabled}
+        modal={false}
       >
         <SelectTrigger
           id={id}
