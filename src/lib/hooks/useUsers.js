@@ -5,6 +5,7 @@ import { usersService } from '@/lib/services/users.service';
 
 export const useUsers = () => {
     const [users, setUsers] = useState([]);
+    const [counts, setCounts] = useState({ etudiant: 0, professeur: 0 });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -52,6 +53,7 @@ export const useUsers = () => {
             // Vérifier si la requête n'a pas été annulée
             if (!abortControllerRef.current.signal.aborted) {
                 setUsers(response.data || []);
+                setCounts(response.meta?.counts || { etudiant: 0, professeur: 0 });
                 setPagination({
                     currentPage: response.meta?.current_page || 1,
                     perPage: response.meta?.per_page || 15,
@@ -202,6 +204,7 @@ export const useUsers = () => {
     return {
         // État
         users,
+        counts,
         pagination,
         links,
         loading,

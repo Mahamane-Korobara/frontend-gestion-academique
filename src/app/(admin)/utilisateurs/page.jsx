@@ -34,7 +34,6 @@ import {
     getUserDepartment,
     getUserStatus,
     getRegistrationYear,
-    countUsersByRole,
     filterUsers,
     getFilterOptionsByRole,
 } from '@/lib/utils/userHelpers';
@@ -54,7 +53,7 @@ export default function UtilisateursPage() {
     const inscriptionModal = useModal();
 
     // Hooks data
-    const { users, loading: usersLoading, createUser, updateUser, deleteUser, resetPassword } = useUsers();
+    const { users, counts, loading: usersLoading, createUser, updateUser, deleteUser, resetPassword, applyFilters, filters: hookFilters } = useUsers();
     const { createMessage, loadConversation, fetchUnreadCount } = useMessages();
     const { activeFilieresOptions, loading: filieresLoading }   = useFilieres();
     const { niveauxOptions, getNiveauxByFiliere, loading: niveauxLoading } = useNiveaux();
@@ -72,7 +71,11 @@ export default function UtilisateursPage() {
 
     // Filtres
     const resetFilters    = () => { setSearchQuery(''); setSelectedFilters({}); };
-    const handleTabChange = (tab) => { setActiveTab(tab); resetFilters(); };
+    const handleTabChange = (tab) => { setActiveTab(tab); resetFilters(); applyFilters({
+            ...selectedFilters, // garde les filtres actuels (si tu veux)
+            role: tab,          // 'etudiant' ou 'professeur'
+            search: searchQuery
+        }); };
     const updateFilter    = (key, value) => setSelectedFilters(prev => ({ ...prev, [key]: value }));
 
     const filterOptions = useMemo(
@@ -141,8 +144,8 @@ export default function UtilisateursPage() {
 
     // Onglets
     const tabs = [
-        { id: 'etudiant',   label: 'Étudiants',  count: countUsersByRole(users, 'etudiant') },
-        { id: 'professeur', label: 'Professeurs', count: countUsersByRole(users, 'professeur') },
+        { id: 'etudiant',   label: 'Étudiants',  count:counts.etudiant },
+        { id: 'professeur', label: 'Professeurs', count: counts.professeur },
     ];
 
     // Colonnes
