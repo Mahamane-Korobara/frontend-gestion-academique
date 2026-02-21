@@ -23,7 +23,7 @@ const MENU_CONFIG = {
         { title: 'Matières & Cours', icon: BookMarked, href: '/matieres-cours' },
         { title: 'Emploi du Temps global', icon: Calendar, href: '/emploi-du-temps'},
         { title: 'Cycles Académiques', icon: Calendar, href: '/annees-academiques' },
-        { title: 'Évolution & Barèmes', icon: TrendingUp, href: '/evaluations' },
+        { title: 'Evaluations & Barèmes', icon: TrendingUp, href: '/evaluations' },
         { title: 'Validation des Notes', icon: CheckCircle, href: '/notes' },
         { title: 'Communication', icon: Megaphone, href: '/annonces' },
       ],

@@ -1,4 +1,5 @@
 // URLs
+import { AlertCircle, ClipboardList } from 'lucide-react';
 export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME;
 
@@ -46,13 +47,30 @@ export const JOURS_SEMAINE = {
     SAMEDI: 'samedi',
 };
 
-// Types d'évaluation
-export const TYPES_EVALUATION = {
-    CC: 'cc',
-    EXAMEN: 'examen',
-    PROJET: 'projet',
-    TP: 'tp',
+export const ALERT_ICONS = {
+    cours_sans_evaluations: ClipboardList,
+    default: AlertCircle,
 };
+
+
+/**
+ * TYPES_EVALUATIONS — correspond exactement au TypeEvaluationSeeder
+ * value = id en base (ordre d'insertion : 1=CC, 2=EF, 3=TP, 4=PROJ, 5=RATT)
+ */
+export const TYPES_EVALUATIONS = [
+    { value: '1', label: 'Contrôle Continu', code: 'CC', coefficient_defaut: 0.40 },
+    { value: '2', label: 'Examen Final', code: 'EF', coefficient_defaut: 0.60 },
+    { value: '3', label: 'Travaux Pratiques', code: 'TP', coefficient_defaut: 0.30 },
+    { value: '4', label: 'Projet', code: 'PROJ', coefficient_defaut: 0.40 },
+    { value: '5', label: 'Rattrapage', code: 'RATT', coefficient_defaut: 1.00 },
+];
+
+export const STATUT_OPTIONS = [
+    { value: 'planifiee', label: 'Planifiée' },
+    { value: 'en_cours', label: 'En cours' },
+    { value: 'terminee', label: 'Terminée' },
+    { value: 'annulee', label: 'Annulée' },
+];
 
 // Valeurs exactes de l'enum JourSemaine PHP (majuscule)
 export const JOURS = [
