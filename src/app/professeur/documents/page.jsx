@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react';
 import { Plus } from 'lucide-react';
-import Link from 'next/link';
 
 // UI & Layout
 import { Button } from '@/components/ui/button';
@@ -44,9 +43,9 @@ export default function DocumentsPage() {
   const { 
     documents, 
     loading, 
+    uploadDocument,
     deleteDocument, 
     downloadDocument,
-    isEtudiant,
     canUpload,
     canDelete,
   } = useDocuments();
@@ -151,7 +150,12 @@ export default function DocumentsPage() {
 
   // ============ MODAL CONTENT ============
   const viewModalContent = <DocumentViewModal document={selectedDocument} />;
-  const uploadModalContent = <DocumentUploadModal onClose={uploadModal.close} />;
+  const uploadModalContent = (
+    <DocumentUploadModal
+      onClose={uploadModal.close}
+      onUploadDocument={uploadDocument}
+    />
+  );
 
   return (
     <ListPageLayout

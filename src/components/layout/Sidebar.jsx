@@ -49,7 +49,7 @@ const MENU_CONFIG = {
     {
       section: 'COMMUNICATION',
       items: [
-        { title: 'Annonces', icon: FileText, href: '/professeur/annonces' },
+        { title: 'Communication', icon: FileText, href: '/professeur/annonces' },
         { title: 'Documents', icon: File, href: '/professeur/documents' },
       ],
     },

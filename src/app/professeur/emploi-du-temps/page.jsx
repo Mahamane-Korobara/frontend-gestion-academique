@@ -1,123 +1,80 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Calendar, Clock, MapPin, Users } from 'lucide-react';
+import { useState } from 'react';
+import { CalendarClock } from 'lucide-react';
 
-// UI & Layout
 import ListPageLayout from '@/components/partage/ListPageLayout';
-import Header from '@/components/layout/Header';
-import EmploiDuTemps from '@/components/calendrier/EmploiDuTemps';
+import ListPageFilters from '@/components/partage/ListPageFilters';
+import CalendrierSection from '@/components/calendrier/CalendrierSection';
 
-// Hooks
-import useApi from '@/lib/hooks/useApi';
-import { emploiDuTempsProfesseurAPI } from '@/lib/api/endpoints';
+import useEmploiDuTempsProfesseur from '@/lib/hooks/useEmploiDuTempsProfesseur';
 
-export default function EmploiDuTempsPage() {
-  const [viewMode, setViewMode] = useState('semaine'); // semaine, jour, resume
-  const [selectedDate, setSelectedDate] = useState(new Date());
+export default function EmploiDuTempsProfesseurPage() {
+    const [activeTab, setActiveTab] = useState('calendrier');
 
-  // Récupérer l'emploi du temps
-  const { data: emploiDuTemps = {}, loading } = useApi(
-    () => emploiDuTempsProfesseurAPI.getAll()
-  );
+    const {
+        creneaux,
+        loading,
+        filters,
+        totalCours,
+        semestresOptions,
+        filieresOptions,
+        niveauxOptions,
+        coursOptions,
+        updateFilter,
+        resetFilters,
+    } = useEmploiDuTempsProfesseur();
 
-  const seances = emploiDuTemps.seances || [];
+    const tabs = [
+        { id: 'calendrier', label: 'Calendrier', count: creneaux.length },
+        { id: 'examens', label: "Calendrier d'examen" },
+    ];
 
-  return (
-    <div>
-      <Header 
-        title="Emploi du Temps" 
-        description="Consultez votre calendrier et vos horaires de cours"
-      />
-      <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto">
+    return (
         <ListPageLayout
-          title="Emploi du Temps"
-          description="Gérez votre calendrier académique"
+            title="Emploi du temps"
+            description={`Consultez votre planning de cours. ${totalCours} cours affectes.`}
         >
-          {/* Options de vue */}
-          <div className="mb-6 flex gap-2">
-            <button
-              onClick={() => setViewMode('semaine')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                viewMode === 'semaine'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Semaine
-            </button>
-            <button
-              onClick={() => setViewMode('jour')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                viewMode === 'jour'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Jour
-            </button>
-            <button
-              onClick={() => setViewMode('resume')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                viewMode === 'resume'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Résumé
-            </button>
-          </div>
-
-          {/* Composant Emploi du Temps */}
-          <div className="bg-white rounded-lg border">
-            <EmploiDuTemps 
-              seances={seances}
-              loading={loading}
-              viewMode={viewMode}
-              selectedDate={selectedDate}
-              onDateChange={setSelectedDate}
+            <ListPageFilters
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                hideSearch={true}
+                showResetButton={activeTab === 'calendrier'}
+                onReset={resetFilters}
             />
-          </div>
 
-          {/* Liste des prochaines séances */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Prochaines Séances
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {seances.slice(0, 6).map((seance, index) => (
-                <div
-                  key={index}
-                  className="p-4 border rounded-lg hover:shadow-lg transition-shadow"
-                >
-                  <h4 className="font-semibold text-gray-900 mb-3">
-                    {seance.cours?.titre}
-                  </h4>
-
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      <span>{seance.jour}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      <span>{seance.heure_debut} - {seance.heure_fin}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      <span>{seance.salle || 'Salle TBD'}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      <span>{seance.nb_etudiants || 0} étudiants</span>
-                    </div>
-                  </div>
+            {activeTab === 'calendrier' && (
+                <div className="mt-4 animate-in fade-in slide-in-from-bottom-2">
+                    <CalendrierSection
+                        creneaux={creneaux}
+                        loading={loading}
+                        niveauxOptions={niveauxOptions}
+                        semestresOptions={semestresOptions}
+                        filieresOptions={filieresOptions}
+                        coursOptions={coursOptions}
+                        filters={filters}
+                        onFiltreFiliere={(v) => updateFilter('filiere_id', v)}
+                        onFiltreNiveau={(v) => updateFilter('niveau_id', v)}
+                        onFiltreSemestre={(v) => updateFilter('semestre_id', v)}
+                        onFiltreCours={(v) => updateFilter('cours_id', v)}
+                    />
                 </div>
-              ))}
-            </div>
-          </div>
+            )}
+
+            {activeTab === 'examens' && (
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
+                    <div className="flex items-start gap-3">
+                        <CalendarClock className="mt-0.5 h-5 w-5 shrink-0" />
+                        <div>
+                            <h3 className="text-sm font-semibold">Calendrier d&apos;examen</h3>
+                            <p className="mt-1 text-sm">
+                                Cette vue est en cours de developpement.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </ListPageLayout>
-      </main>
-    </div>
-  );
+    );
 }

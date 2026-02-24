@@ -183,7 +183,7 @@ export const professeurAPI = {
 // PROFESSEUR - EMPLOI DU TEMPS
 // ============================================
 export const emploiDuTempsProfesseurAPI = {
-    getAll: () => apiClient.get('/professeur/emploi-du-temps'),
+    getAll: (params) => apiClient.get('/professeur/emploi-du-temps', params),
     getSemaine: (params) => apiClient.get('/professeur/emploi-du-temps/semaine', params),
     getJour: (params) => apiClient.get('/professeur/emploi-du-temps/jour', params),
     getResume: () => apiClient.get('/professeur/emploi-du-temps/resume'),

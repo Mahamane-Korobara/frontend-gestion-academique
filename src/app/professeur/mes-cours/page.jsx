@@ -75,27 +75,11 @@ export default function MesCoursPage() {
           variant="blue"
         />
       )
-    },
-    {
-      key: 'cours-actions',
-      label: 'ACTIONS',
-      className: 'w-[100px]',
-      render: (_, row) => (
-        <div className="flex justify-end gap-2">
-          <Link href={`/professeur/cours/${row.id}`}>
-            <Button size="sm" variant="outline">
-              Voir
-            </Button>
-          </Link>
-        </div>
-      )
     }
   ];
 
   const tabs = [
     { id: 'all', label: 'Tous', count: total || mesCours.length },
-    { id: 'actifs', label: 'Actifs', count: mesCours.filter((c) => !c.is_archived).length },
-    { id: 'archives', label: 'Archivés', count: mesCours.filter((c) => c.is_archived).length },
   ];
 
   return (

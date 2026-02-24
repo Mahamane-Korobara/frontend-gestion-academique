@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Loader2, Upload, X } from 'lucide-react';
 
@@ -12,8 +12,6 @@ import FormSelect from '@/components/forms/FormSelect';
 
 // Hooks et Services
 import useDocumentFormOptions from '@/lib/hooks/useDocumentFormOptions';
-import useDocuments from '@/lib/hooks/useDocuments';
-import useAuth from '@/lib/hooks/useAuth';
 
 // Types de documents
 const DOCUMENT_TYPES = [
@@ -24,9 +22,13 @@ const DOCUMENT_TYPES = [
   { value: 'image', label: 'Image', accept: '.jpg,.jpeg,.png,.gif,.webp', mimes: 'image/jpeg,image/png,image/gif,image/webp' }
 ];
 
-export default function DocumentUploadModal({ onClose }) {
-  const { user } = useAuth();
-  const { uploadDocument } = useDocuments();
+const MAX_UPLOAD_MB = Math.max(
+  1,
+  Number.parseInt(process.env.NEXT_PUBLIC_MAX_UPLOAD_MB || '2', 10) || 2
+);
+const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+
+export default function DocumentUploadModal({ onClose, onUploadDocument }) {
   const { filieres, niveaux, cours, loading: optionsLoading } = useDocumentFormOptions();
 
   const [formData, setFormData] = useState({
@@ -43,10 +45,18 @@ export default function DocumentUploadModal({ onClose }) {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const getFiliereId = (item) => String(item?.filiere_id ?? item?.filiere?.id ?? '');
+
+  // Filtrer les niveaux selon la filière sélectionnée
+  const filteredNiveaux = useMemo(() => {
+    if (!formData.filiere_id) return [];
+    return niveaux.filter((n) => getFiliereId(n) === formData.filiere_id);
+  }, [niveaux, formData.filiere_id]);
+
   // Filtrer les cours selon le niveau sélectionné
-  const filteredCours = cours.filter(c => 
-    !formData.niveau_id || c.niveau_id?.toString() === formData.niveau_id
-  );
+  const filteredCours = useMemo(() => {
+    return cours.filter((c) => !formData.niveau_id || c.niveau_id?.toString() === formData.niveau_id);
+  }, [cours, formData.niveau_id]);
 
   // Valider le formulaire
   const validateForm = () => {
@@ -77,10 +87,8 @@ export default function DocumentUploadModal({ onClose }) {
     if (!file) {
       newErrors.fichier = 'Veuillez sélectionner un fichier';
     } else {
-      // Vérifier la taille (max 10 MB)
-      const maxSize = 40 * 1024 * 1024; // 10 MB
-      if (file.size > maxSize) {
-        newErrors.fichier = 'Le fichier ne doit pas dépasser 10 MB';
+      if (file.size > MAX_UPLOAD_BYTES) {
+        newErrors.fichier = `Le fichier ne doit pas dépasser ${MAX_UPLOAD_MB} MB`;
       }
 
       // Vérifier le type MIME
@@ -127,24 +135,52 @@ export default function DocumentUploadModal({ onClose }) {
 
   // Handler de changement de select
   const handleSelectChange = (name, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => {
+      if (name === 'filiere_id') {
+        return {
+          ...prev,
+          filiere_id: value,
+          niveau_id: '',
+          cours_id: '',
+        };
+      }
 
-    // Si on change le niveau, réinitialiser le cours
-    if (name === 'niveau_id') {
-      setFormData((prev) => ({
+      if (name === 'niveau_id') {
+        return {
+          ...prev,
+          niveau_id: value,
+          cours_id: '',
+        };
+      }
+
+      return {
         ...prev,
-        cours_id: '',
-      }));
-    }
+        [name]: value,
+      };
+    });
 
     // Effacer l'erreur du champ
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
         [name]: '',
+      }));
+    }
+
+    if (name === 'filiere_id') {
+      setErrors((prev) => ({
+        ...prev,
+        filiere_id: '',
+        niveau_id: '',
+        cours_id: '',
+      }));
+    }
+
+    if (name === 'niveau_id') {
+      setErrors((prev) => ({
+        ...prev,
+        niveau_id: '',
+        cours_id: '',
       }));
     }
   };
@@ -211,7 +247,11 @@ export default function DocumentUploadModal({ onClose }) {
         formDataToSend.append('date_expiration', formData.date_expiration);
       }
 
-      await uploadDocument(formDataToSend);
+      if (typeof onUploadDocument !== 'function') {
+        throw new Error("Action d'upload indisponible");
+      }
+
+      await onUploadDocument(formDataToSend);
       toast.success('Document téléchargé avec succès');
       
       // Réinitialiser le formulaire
@@ -235,6 +275,26 @@ export default function DocumentUploadModal({ onClose }) {
       
       // Afficher les erreurs de validation du backend si disponibles
       if (error.validationErrors) {
+        const fichierErrorsRaw = error.validationErrors.fichier || error.validationErrors.file;
+        const fichierErrors = Array.isArray(fichierErrorsRaw)
+          ? fichierErrorsRaw
+          : fichierErrorsRaw
+            ? [fichierErrorsRaw]
+            : [];
+
+        const hasServerUploadLimitError = fichierErrors.some((msg) =>
+          String(msg).includes('upload_max_filesize') ||
+          String(msg).includes('post_max_size') ||
+          String(msg).includes('failed to upload')
+        );
+
+        if (hasServerUploadLimitError) {
+          toast.error(
+            `Le fichier est trop volumineux pour le serveur. Taille max actuelle: ${MAX_UPLOAD_MB} MB.`
+          );
+          return;
+        }
+
         const errorMessages = Object.entries(error.validationErrors)
           .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
           .join(' | ');
@@ -271,7 +331,7 @@ export default function DocumentUploadModal({ onClose }) {
             >
               <Upload className="w-8 h-8 text-gray-400 mb-2" />
               <span className="text-sm text-gray-600">Cliquez pour sélectionner un fichier</span>
-              <span className="text-xs text-gray-500 mt-1">Max 10 MB</span>
+              <span className="text-xs text-gray-500 mt-1">Max {MAX_UPLOAD_MB} MB</span>
             </label>
           </div>
         ) : (
@@ -368,10 +428,10 @@ export default function DocumentUploadModal({ onClose }) {
           label="Niveau"
           value={formData.niveau_id}
           onValueChange={(value) => handleSelectChange('niveau_id', value)}
-          options={niveaux.map((n) => ({ value: n.id.toString(), label: n.nom }))}
-          placeholder="Sélectionner un niveau"
+          options={filteredNiveaux.map((n) => ({ value: n.id.toString(), label: n.nom }))}
+          placeholder={formData.filiere_id ? "Sélectionner un niveau" : "Sélectionnez d'abord une filière"}
           error={errors.niveau_id}
-          disabled={isSubmitting || optionsLoading}
+          disabled={isSubmitting || optionsLoading || !formData.filiere_id}
           required
         />
 
@@ -380,7 +440,7 @@ export default function DocumentUploadModal({ onClose }) {
           label="Cours"
           value={formData.cours_id}
           onValueChange={(value) => handleSelectChange('cours_id', value)}
-          options={filteredCours.map((c) => ({ value: c.id.toString(), label: `${c.titre} (${c.code})` }))}
+          options={filteredCours.map((c) => ({ value: c.id.toString(), label: `${c.titre}` }))}
           placeholder={formData.niveau_id ? "Sélectionner un cours" : "Sélectionnez d'abord un niveau"}
           error={errors.cours_id}
           disabled={isSubmitting || optionsLoading || !formData.niveau_id}

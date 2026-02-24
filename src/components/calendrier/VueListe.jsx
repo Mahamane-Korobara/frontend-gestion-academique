@@ -1,10 +1,11 @@
-import { useMemo, useState, Fragment } from 'react';
+import { useMemo } from 'react';
 import { Trash2, BookOpen } from 'lucide-react';
 import { JOURS_ORDRE, TYPE_ICONS } from '@/lib/utils/constants';
 import { getProfNom, getStyles } from '@/lib/utils/emploiDuTempsHelpers';
 import EmptyState from '@/components/partage/EmptyState';
 
 export default function VueListe({ creneaux, onDelete }) {
+    const canDelete = typeof onDelete === 'function';
     const parJour = useMemo(() => {
         const map = {};
         creneaux.forEach(c => { if (!map[c.jour]) map[c.jour] = []; map[c.jour].push(c); });
@@ -55,10 +56,12 @@ export default function VueListe({ creneaux, onDelete }) {
                                             {getProfNom(c)}{c.salle ? ` · 🏛️ ${c.salle.nom}` : ''}
                                         </p>
                                     </div>
-                                    <button onClick={() => onDelete?.(c.id)}
-                                        className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    {canDelete && (
+                                        <button onClick={() => onDelete(c.id)}
+                                            className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
                             );
                         })}

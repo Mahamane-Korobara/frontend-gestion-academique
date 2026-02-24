@@ -7,6 +7,7 @@ import { getProfNom, getStyles } from '@/lib/utils/emploiDuTempsHelpers';;
 export default function CreneauCard({ creneau, onDelete, compact = false }) {
     const styles = getStyles(creneau.type?.color);
     const Icon   = TYPE_ICONS[creneau.type?.code] || BookOpen;
+    const canDelete = typeof onDelete === 'function';
 
     if (compact) {
         return (
@@ -18,12 +19,14 @@ export default function CreneauCard({ creneau, onDelete, compact = false }) {
                             {creneau.cours?.titre || '—'}
                         </span>
                     </div>
-                    <button
-                        onClick={() => onDelete?.(creneau.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-gray-400 hover:text-red-500 shrink-0"
-                    >
-                        <Trash2 className="w-2.5 h-2.5" />
-                    </button>
+                    {canDelete && (
+                        <button
+                            onClick={() => onDelete(creneau.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-gray-400 hover:text-red-500 shrink-0"
+                        >
+                            <Trash2 className="w-2.5 h-2.5" />
+                        </button>
+                    )}
                 </div>
                 <p className="text-[9px] text-gray-400 truncate pl-2.5">
                     {creneau.creneau?.debut}–{creneau.creneau?.fin}
@@ -39,12 +42,14 @@ export default function CreneauCard({ creneau, onDelete, compact = false }) {
                     <Icon className="w-2.5 h-2.5" />
                     {creneau.type?.label || creneau.type?.code}
                 </span>
-                <button
-                    onClick={() => onDelete?.(creneau.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50"
-                >
-                    <Trash2 className="w-3 h-3" />
-                </button>
+                {canDelete && (
+                    <button
+                        onClick={() => onDelete(creneau.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50"
+                    >
+                        <Trash2 className="w-3 h-3" />
+                    </button>
+                )}
             </div>
             <p className="text-xs font-bold text-gray-800 truncate">{creneau.cours?.titre || '—'}</p>
             <p className="text-[10px] text-gray-500 truncate">{creneau.cours?.code}</p>
