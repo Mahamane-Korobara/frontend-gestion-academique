@@ -13,26 +13,27 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: 'Gestion Académique',
+  title: 'MASTER EN ÉCONOMIE QUANTITATIVE CALCULABLE',
   description: 'Application web de gestion academique',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [
-      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icon.svg?v=3', type: 'image/svg+xml' },
+      { url: '/icons/icon-192-v2.png?v=3', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512-v2.png?v=3', sizes: '512x512', type: 'image/png' },
     ],
-    apple: '/apple-touch-icon.png',
-    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon-v2.png?v=3',
+    shortcut: '/favicon-eqc.ico?v=3',
   },
   appleWebApp: {
     capable: true,
-    title: 'Gestion Academique',
+    title: 'MASTER EN ÉCONOMIE QUANTITATIVE CALCULABLE',
     statusBarStyle: 'default',
   },
 };
 
 export const viewport = {
-  themeColor: '#0f172a',
+  themeColor: '#0B4DB9',
 };
 
 export default function RootLayout({ children }) {

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="EQC">
+  <rect x="0" y="0" width="512" height="512" fill="#0B4DB9"/>
+  <g fill="#FFFFFF" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="170" letter-spacing="-8">
+    <text x="62" y="312">E</text>
+    <text x="180" y="312">Q</text>
+    <text x="321" y="312">C</text>
+  </g>
+  <g fill="none" stroke="#F4C20D" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="186,280 220,248 256,266 304,208"/>
+    <polyline points="304,208 302,240 334,236"/>
+  </g>
+</svg>
