@@ -23,7 +23,10 @@ export default function useCycleAcademique() {
                 initialFetchDone.current = true;
             }
         } catch (err) {
-            if (err.name !== 'AbortError') setError(err);
+            if (err.name !== 'AbortError') {
+                setError(err);
+                initialFetchDone.current = true;
+            }
         } finally {
             if (!abortRef.current?.signal.aborted) setLoading(false);
         }
@@ -106,6 +109,7 @@ export default function useCycleAcademique() {
         anneesOptions,
         loading,
         error,
+        isInitialized: initialFetchDone.current,
         refetch,
         createAnnee,
         updateAnnee,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 
@@ -18,7 +19,9 @@ import FiliereForm     from '@/components/forms/FiliereForm';
 import NiveauForm      from '@/components/forms/NiveauForm';
 
 export default function FilieresNiveauxPage() {
-  const [activeTab, setActiveTab]       = useState('filieres');
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'niveaux' ? 'niveaux' : 'filieres';
+  const [activeTab, setActiveTab]       = useState(initialTab);
   const [searchQuery, setSearchQuery]   = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button }    from '@/components/ui/button';
 import FormInput     from '@/components/forms/FormInput';
@@ -31,22 +31,17 @@ export default function AnneeAcademiqueForm({
         is_active:   annee?.is_active  ?? false,
     });
     const [errors, setErrors] = useState({});
-
-    // Fusionner les erreurs serveur
-    useEffect(() => {
-        if (serverErrors && Object.keys(serverErrors).length > 0) {
-            setErrors(prev => ({ ...prev, ...serverErrors }));
-        }
-    }, [serverErrors]);
+    const [dirtyFields, setDirtyFields] = useState({});
 
     const set = (key, value) => {
         setForm(p => ({ ...p, [key]: value }));
         setErrors(p => ({ ...p, [key]: undefined }));
+        setDirtyFields(p => ({ ...p, [key]: true }));
     };
 
     const validate = () => {
         const e = {};
-        if (!form.annee)       e.annee      = 'L\'année est requise (ex: 2025-2026)';
+        if (!isEdit && !form.annee) e.annee = 'L\'année est requise (ex: 2025-2026)';
         if (!form.date_debut)  e.date_debut = 'La date de début est requise';
         if (!form.date_fin)    e.date_fin   = 'La date de fin est requise';
         if (form.date_debut && form.date_fin && form.date_debut >= form.date_fin) {
@@ -59,7 +54,19 @@ export default function AnneeAcademiqueForm({
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validate()) return;
-        await onSubmit?.(form);
+        const payload = isEdit
+            ? {
+                date_debut: form.date_debut,
+                date_fin: form.date_fin,
+            }
+            : form;
+
+        await onSubmit?.(payload);
+    };
+
+    const fieldError = (key) => {
+        if (dirtyFields[key]) return errors[key];
+        return errors[key] || serverErrors?.[key];
     };
 
     return (
@@ -69,7 +76,7 @@ export default function AnneeAcademiqueForm({
                 placeholder="ex: 2025-2026"
                 value={form.annee}
                 onChange={e => set('annee', e.target.value)}
-                error={errors.annee}
+                error={fieldError('annee')}
                 disabled={loading || isEdit}
                 required
             />
@@ -80,7 +87,7 @@ export default function AnneeAcademiqueForm({
                     type="date"
                     value={form.date_debut}
                     onChange={e => set('date_debut', e.target.value)}
-                    error={errors.date_debut}
+                    error={fieldError('date_debut')}
                     disabled={loading}
                     required
                 />
@@ -89,7 +96,7 @@ export default function AnneeAcademiqueForm({
                     type="date"
                     value={form.date_fin}
                     onChange={e => set('date_fin', e.target.value)}
-                    error={errors.date_fin}
+                    error={fieldError('date_fin')}
                     disabled={loading}
                     required
                 />

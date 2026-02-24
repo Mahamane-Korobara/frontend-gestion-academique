@@ -16,10 +16,28 @@ export default function DashboardCharts({ charts = {} }) {
     value: count,
   }));
 
-  const niveauChartData = Object.entries(charts.etudiants_par_niveau || {}).map(([niveau, count]) => ({
-    name: niveau,
-    value: count,
-  }));
+  const niveauChartData = (() => {
+    const raw = charts.etudiants_par_niveau || {};
+
+    if (Array.isArray(raw)) {
+      const grouped = raw.reduce((acc, row) => {
+        const name = row?.name || row?.nom || row?.niveau || 'N/A';
+        const count = Number(row?.count ?? row?.value ?? row?.etudiants_count ?? 0);
+        acc[name] = (acc[name] || 0) + count;
+        return acc;
+      }, {});
+
+      return Object.entries(grouped).map(([niveau, count]) => ({
+        name: niveau,
+        value: count,
+      }));
+    }
+
+    return Object.entries(raw).map(([niveau, count]) => ({
+      name: niveau,
+      value: count,
+    }));
+  })();
 
   return (
     <>
@@ -29,7 +47,7 @@ export default function DashboardCharts({ charts = {} }) {
         <Card>
           <CardHeader>
             <CardTitle>Répartition par Filière</CardTitle>
-            <CardDescription>Nombre d'étudiants inscrits</CardDescription>
+            <CardDescription>Nombre d&apos;etudiants inscrits</CardDescription>
           </CardHeader>
           <CardContent>
             {filieresChartData.length > 0 ? (
@@ -61,7 +79,7 @@ export default function DashboardCharts({ charts = {} }) {
         <Card>
           <CardHeader>
             <CardTitle>Répartition par Niveau</CardTitle>
-            <CardDescription>Nombre d'étudiants par niveau d'étude</CardDescription>
+            <CardDescription>Nombre d&apos;etudiants par niveau d&apos;etude</CardDescription>
           </CardHeader>
           <CardContent>
             {niveauChartData.length > 0 ? (

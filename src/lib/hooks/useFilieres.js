@@ -26,7 +26,10 @@ export const useFilieres = () => {
                 initialFetchDone.current = true;
             }
         } catch (err) {
-            if (err.name !== 'AbortError') setError(err);
+            if (err.name !== 'AbortError') {
+                setError(err);
+                initialFetchDone.current = true;
+            }
         } finally {
             if (!abortControllerRef.current?.signal.aborted) setLoading(false);
         }
@@ -92,6 +95,7 @@ export const useFilieres = () => {
         activeFilieres,
         loading,
         error,
+        isInitialized: initialFetchDone.current,
         activeFilieresOptions,
         refetch,
         createFiliere,

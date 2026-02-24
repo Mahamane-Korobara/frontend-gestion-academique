@@ -18,7 +18,31 @@ export default function DashboardAlerts({ alerts = [] }) {
 
     if (!alerts || alerts.length === 0) return null;
 
-    const handleNavigate = (path) => router.push(path);
+    const normalizeAlertPath = (path) => {
+        if (typeof path !== 'string' || !path.trim()) return null;
+        const rawPath = path.trim();
+
+        const routeAliases = {
+            '/admin/emploi-du-temps': '/emploi-du-temps',
+            '/admin/emplois-du-temps': '/emploi-du-temps',
+            '/admin/matieres-cours': '/matieres-cours',
+            '/admin/annees-academiques': '/annees-academiques',
+            '/admin/filieres-niveaux': '/filieres-niveaux',
+            '/admin/evaluations': '/evaluations',
+        };
+
+        if (/^\/admin\/evaluations(\/.*)?$/.test(rawPath)) return '/evaluations';
+        if (/^\/evaluations\/.+$/.test(rawPath)) return '/evaluations';
+        if (routeAliases[rawPath]) return routeAliases[rawPath];
+        if (rawPath.startsWith('/admin/')) return rawPath.replace('/admin', '');
+        return rawPath;
+    };
+
+    const handleNavigate = (path) => {
+        const nextPath = normalizeAlertPath(path);
+        if (!nextPath) return;
+        router.push(nextPath);
+    };
 
     return (
         <>

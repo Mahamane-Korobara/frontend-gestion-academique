@@ -3,6 +3,17 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { semestresAPI, anneesAcademiquesAPI } from '@/lib/api/endpoints';
 
+const hasMessage = (err, matcher) => {
+    const raw = err?.data?.message || err?.message || '';
+    return matcher.test(String(raw).toLowerCase());
+};
+
+const isNoActiveAnneeError = (err) =>
+    hasMessage(err, /aucune annee academique active|aucune année académique active/);
+
+const isNoActiveSemestreError = (err) =>
+    hasMessage(err, /aucun semestre actif/);
+
 export const useSemestres = () => {
     const [semestres, setSemestres] = useState([]);
     const [semestreActif, setSemestreActif] = useState(null);
@@ -22,28 +33,48 @@ export const useSemestres = () => {
 
         try {
             // Récupérer l'année académique active
-            const anneeRes = await anneesAcademiquesAPI.getActive();
-            const annee = anneeRes.data || anneeRes;
+            let annee = null;
+            try {
+                const anneeRes = await anneesAcademiquesAPI.getActive();
+                annee = anneeRes.data || anneeRes;
+            } catch (err) {
+                if (err?.name === 'AbortError') return;
+                if (!isNoActiveAnneeError(err)) throw err;
+            }
 
-            if (!abortControllerRef.current.signal.aborted && annee?.id) {
-                setAnneeActive(annee);
+            if (abortControllerRef.current.signal.aborted) return;
 
-                // Récupérer les semestres de cette année + le semestre actif
-                const [semestresRes, activeRes] = await Promise.all([
-                    semestresAPI.getAll({ annee_academique_id: annee.id }),
-                    semestresAPI.getActive(),
-                ]);
+            if (!annee?.id) {
+                setAnneeActive(null);
+                setSemestres([]);
+                setSemestreActif(null);
+                initialFetchDone.current = true;
+                return;
+            }
 
-                if (!abortControllerRef.current.signal.aborted) {
-                    setSemestres(semestresRes.data || []);
-                    setSemestreActif(activeRes.data || activeRes || null);
-                    initialFetchDone.current = true;
-                }
+            setAnneeActive(annee);
+
+            // Récupérer les semestres de cette année + le semestre actif
+            const semestresRes = await semestresAPI.getAll({ annee_academique_id: annee.id });
+
+            let activeRes = null;
+            try {
+                activeRes = await semestresAPI.getActive();
+            } catch (err) {
+                if (err?.name === 'AbortError') return;
+                if (!isNoActiveSemestreError(err)) throw err;
+            }
+
+            if (!abortControllerRef.current.signal.aborted) {
+                setSemestres(semestresRes.data || []);
+                setSemestreActif(activeRes?.data || activeRes || null);
+                initialFetchDone.current = true;
             }
         } catch (err) {
             if (err.name !== 'AbortError') {
                 setError(err);
                 console.error('Erreur chargement semestres:', err);
+                initialFetchDone.current = true;
             }
         } finally {
             if (!abortControllerRef.current?.signal.aborted) setLoading(false);
@@ -71,6 +102,7 @@ export const useSemestres = () => {
         semestresOptions,
         loading,
         error,
+        isInitialized: initialFetchDone.current,
         refetch: fetchSemestres,
     };
 };

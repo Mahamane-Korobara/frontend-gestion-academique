@@ -1,9 +1,43 @@
 'use client';
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import useAuth from '@/lib/hooks/useAuth';
 import Sidebar from '@/components/layout/Sidebar';
 import MobileSidebar from '@/components/layout/MobileSidebar';
+import useAdminOnboardingStatus from '@/lib/hooks/useAdminOnboardingStatus';
+import AdminSetupModal from '@/components/onboarding/AdminSetupModal';
+
+function AdminOnboardingGuard() {
+    const router = useRouter();
+    const pathname = usePathname();
+    const { loading, hasError, isInitialized, isReady, missingStep, checklist } =
+        useAdminOnboardingStatus();
+
+    const stepPath = missingStep?.href?.split('?')[0];
+    const isOnStepPage = stepPath
+        ? pathname?.startsWith(stepPath)
+        : false;
+
+    const shouldShowModal = Boolean(
+        isInitialized &&
+        !loading &&
+        !hasError &&
+        !isReady &&
+        missingStep &&
+        !isOnStepPage
+    );
+
+    return (
+        <AdminSetupModal
+            isOpen={shouldShowModal}
+            missingStep={missingStep}
+            checklist={checklist}
+            onGoToStep={() => {
+                if (missingStep?.href) router.push(missingStep.href);
+            }}
+        />
+    );
+}
 
 export default function AdminLayout({ children }) {
     const router = useRouter();
@@ -53,6 +87,8 @@ export default function AdminLayout({ children }) {
                     {children}
                 </main>
             </div>
+
+            <AdminOnboardingGuard />
         </div>
     );
 }

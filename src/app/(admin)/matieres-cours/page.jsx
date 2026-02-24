@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import useModal from '@/lib/hooks/useModal';
 import ListPageLayout from '@/components/partage/ListPageLayout';
@@ -43,9 +43,27 @@ export default function CoursPage() {
         retirerProfesseur,
     } = useCours();
 
-    const { niveauxOptions }                                      = useNiveaux();
+    const { niveaux, niveauxOptions }                             = useNiveaux();
     const { semestresOptions, semestreActif, anneeActive }        = useSemestres();
     const { professeursOptions }                                  = useProfesseurs();
+
+    const niveauxOptionsWithFiliere = useMemo(() => {
+        const niveauxById = new Map(
+            (niveaux || []).map((niveau) => [String(niveau.id), niveau])
+        );
+
+        return (niveauxOptions || []).map((option) => {
+            const optionId = String(option.value ?? option.id);
+            const niveau = niveauxById.get(optionId);
+            const niveauNom = niveau?.nom || option.label || `Niveau ${optionId}`;
+            const filiereNom = niveau?.filiere?.nom;
+
+            return {
+                ...option,
+                label: filiereNom ? `${niveauNom} — ${filiereNom}` : niveauNom,
+            };
+        });
+    }, [niveaux, niveauxOptions]);
 
     const {
         isSubmitting,
@@ -155,7 +173,7 @@ export default function CoursPage() {
     const formCommonProps = {
         serverErrors:      validationErrors,
         loading:           isSubmitting,
-        niveauxOptions,
+        niveauxOptions:    niveauxOptionsWithFiliere,
         semestresOptions,
         professeursOptions,
         semestreActif,
@@ -192,7 +210,7 @@ export default function CoursPage() {
                 deleteModalItemName={selectedCours?.titre}
                 onDeleteConfirm={onDeleteCours}
             >
-                {/* ──Onglets et Filtres en premier (Position haute) ── */}
+                {/* Onglets et Filtres en premier (Position haute)  */}
                 <ListPageFilters
                     tabs={tabs}
                     activeTab={activeTab}
@@ -207,7 +225,7 @@ export default function CoursPage() {
                     onReset={() => setSearchQuery('')}
                 />
 
-                {/* ──Formulaire de création (Apparaît sous les filtres si onglet cours) ── */}
+                {/* Formulaire de création (Apparaît sous les filtres si onglet cours)  */}
                 {activeTab === 'cours' && (
                     <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm my-6">
                         <div className="mb-5">
@@ -225,7 +243,7 @@ export default function CoursPage() {
                     </div>
                 )}
 
-                {/* ── Listes de données ── */}
+                {/*  Listes de données  */}
                 <div className="mt-4">
                     {activeTab === 'cours' && (
                         <CoursSection

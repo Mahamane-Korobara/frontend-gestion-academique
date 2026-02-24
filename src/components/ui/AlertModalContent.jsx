@@ -4,11 +4,37 @@ import { ALERT_ICONS } from '@/lib/utils/constants';
 
 export default function AlertModalContent({ alert, onClose, onNavigate }) {
     const Icon = ALERT_ICONS[alert.key] ?? ALERT_ICONS.default;
+    const alertText = `${alert?.key ?? ''} ${alert?.title ?? ''} ${alert?.message ?? ''}`.toLowerCase();
+    const isEmploiDuTempsAlert =
+        alertText.includes('emploi du temps') ||
+        alertText.includes('emplois du temps') ||
+        alertText.includes('emploi_du_temps');
+    const isCoursSansEvaluationsAlert =
+        alert?.key === 'cours_sans_evaluations' ||
+        alertText.includes('sans evaluations') ||
+        alertText.includes('sans évaluations');
+
+    const description = (() => {
+        const baseDescription = alert.modalDescription ?? alert.message;
+        if (isEmploiDuTempsAlert) {
+            return (
+                `${baseDescription} ` +
+                `Pour planifier l'emploi du temps d'un niveau, vous devez d'abord créer au moins un cours dans Matières & Cours.`
+            );
+        }
+        if (isCoursSansEvaluationsAlert) {
+            return (
+                `${baseDescription} ` +
+                `Chaque cours doit avoir au moins une évaluation pour permettre la saisie des notes et la génération correcte des bulletins.`
+            );
+        }
+        return baseDescription;
+    })();
 
     return (
         <div className="space-y-4">
             {/* Description */}
-            <p className="text-sm text-gray-600">{alert.modalDescription ?? alert.message}</p>
+            <p className="text-sm text-gray-600">{description}</p>
 
             {/* Liste des items concernés (si fournis) */}
             {alert.items && alert.items.length > 0 && (
@@ -41,6 +67,24 @@ export default function AlertModalContent({ alert, onClose, onNavigate }) {
                 <Button variant="outline" size="sm" onClick={onClose}>
                     Fermer
                 </Button>
+                {isEmploiDuTempsAlert && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { onNavigate('/matieres-cours'); onClose(); }}
+                    >
+                        Matières & Cours
+                    </Button>
+                )}
+                {isCoursSansEvaluationsAlert && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { onNavigate('/evaluations'); onClose(); }}
+                    >
+                        Évaluations
+                    </Button>
+                )}
                 {alert.action && (
                     <Button
                         size="sm"

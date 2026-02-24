@@ -56,8 +56,8 @@ export default function DynamicQuickActions({ role = 'admin' }) {
           onClick: createModal.open, // Déclenche le modal
           color: 'bg-blue-50 text-blue-600 border-blue-100' 
         },
-        { label: 'Générer Bulletins', icon: FileText, href: '/admin/bulletins', color: 'bg-green-50 text-green-600 border-green-100' },
-        { label: 'Emploi du Temps', icon: Clock, href: '/admin/emploi-du-temps', color: 'bg-purple-50 text-purple-600 border-purple-100' },
+        { label: 'Matières & Cours', icon: FileText, href: '/matieres-cours', color: 'bg-green-50 text-green-600 border-green-100' },
+        { label: 'Emploi du Temps', icon: Clock, href: '/emploi-du-temps', color: 'bg-purple-50 text-purple-600 border-purple-100' },
         { label: 'Gérer Annonces', icon: ClipboardList, href: '/annonces', color: 'bg-orange-50 text-orange-600 border-orange-100' },
       ]
     },

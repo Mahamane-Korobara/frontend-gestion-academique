@@ -26,6 +26,7 @@ export const useNiveaux = () => {
             if (err.name !== 'AbortError') {
                 console.error('Erreur chargement niveaux:', err);
                 setError(err);
+                initialFetchDone.current = true;
             }
         } finally {
             if (!abortControllerRef.current?.signal.aborted) setLoading(false);
@@ -93,6 +94,7 @@ export const useNiveaux = () => {
         niveaux,
         loading,
         error,
+        isInitialized: initialFetchDone.current,
         fetchAllNiveaux,
         refetch: fetchAllNiveaux,
         fetchByFiliere,

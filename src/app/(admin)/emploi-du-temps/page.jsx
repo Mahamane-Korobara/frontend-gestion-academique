@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 import useModal              from '@/lib/hooks/useModal';
 import ListPageLayout        from '@/components/partage/ListPageLayout';
@@ -37,12 +37,35 @@ export default function EmploiDuTempsPage() {
     } = useEmploiDuTemps();
 
     // Data Hooks
-    const { niveauxOptions }                               = useNiveaux();
+    const { niveaux, niveauxOptions }                      = useNiveaux();
     const { semestresOptions, semestreActif, anneeActive } = useSemestres();
     const { activeFilieresOptions }                        = useFilieres();
     const { cours }                                        = useCours();
 
+    const niveauxOptionsWithFiliere = useMemo(() => {
+        const niveauxById = new Map(
+            (niveaux || []).map((niveau) => [String(niveau.id), niveau])
+        );
+
+        return (niveauxOptions || []).map((option) => {
+            const optionId = String(option.value ?? option.id);
+            const niveau = niveauxById.get(optionId);
+            const niveauNom = niveau?.nom || option.label || `Niveau ${optionId}`;
+            const filiereNom = niveau?.filiere?.nom;
+
+            return {
+                ...option,
+                label: filiereNom ? `${niveauNom} — ${filiereNom}` : niveauNom,
+            };
+        });
+    }, [niveaux, niveauxOptions]);
+
     const { isSubmitting, validationErrors, handleCreate, handleDelete } = useModalOperations();
+
+    useEffect(() => {
+        if (!semestreActif?.id || filters.semestre_id) return;
+        updateFilter('semestre_id', String(semestreActif.id));
+    }, [semestreActif?.id, filters.semestre_id, updateFilter]);
 
     // Options pour le filtre "Cours" dans le calendrier
     const coursOptions = useMemo(() =>
@@ -130,7 +153,7 @@ export default function EmploiDuTempsPage() {
                     <CalendrierSection
                         creneaux={creneaux}
                         loading={creneauxLoading}
-                        niveauxOptions={niveauxOptions}
+                        niveauxOptions={niveauxOptionsWithFiliere}
                         semestresOptions={semestresOptions}
                         filieresOptions={activeFilieresOptions}
                         coursOptions={coursOptions}

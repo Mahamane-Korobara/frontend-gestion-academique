@@ -7,7 +7,6 @@ import DashboardLoadingState from '@/components/dashboard/DashboardLoadingState'
 import DashboardAlerts from '@/components/dashboard/DashboardAlerts';
 import DynamicQuickActions from '@/components/dashboard/DynamicQuickActions';
 import DashboardStats from '@/components/dashboard/DashboardStats';
-import DashboardAcademique from '@/components/dashboard/DashboardAcademique';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import Header from '@/components/layout/Header';
@@ -24,7 +23,7 @@ export default function AdminDashboard() {
     return <DashboardLoadingState isLoading={loading} isError={error || !dashboard} />;
   }
 
-  const { resume, charts, academique, recentActivities, alerts, anneeAcademique } = dashboard;
+  const { resume, charts, recentActivities, alerts, anneeAcademique } = dashboard;
 
   return (
     <div>
@@ -42,8 +41,6 @@ export default function AdminDashboard() {
       {/* Statistiques principales */}
       <DashboardStats resume={resume} />
 
-      {/* Données académiques */}
-      <DashboardAcademique academique={academique} />
 
       {/* Graphiques */}
       <DashboardCharts charts={charts} />
