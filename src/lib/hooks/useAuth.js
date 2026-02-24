@@ -34,7 +34,7 @@ export default function useAuth() {
     // Hydrater le store au montage
     useEffect(() => {
         hydrate();
-    }, []);
+    }, [hydrate]);
 
     /**
      * Login utilisateur
@@ -50,11 +50,20 @@ export default function useAuth() {
             // Le store sauvegarde automatiquement dans localStorage
             loginStore(response.user, response.token);
 
-            // 3. Sauvegarder la date de dernière connexion (UX)
+            // 3. Si mot de passe obligatoire, ne pas rediriger vers dashboard
+            if (response.user?.must_change_password) {
+                return {
+                    success: false,
+                    requiresPasswordChange: true,
+                    message: 'Vous devez changer votre mot de passe avant de continuer.',
+                };
+            }
+
+            // 4. Sauvegarder la date de dernière connexion (UX)
             const loginDate = response.user.last_login_at || new Date().toISOString();
             localStorage.setItem('lastSuccessfulLogin', loginDate);
 
-            // 4. Rediriger vers le dashboard approprié
+            // 5. Rediriger vers le dashboard approprié
             const role = response.user.role?.name;
             const redirectTo = ROLE_ROUTES[role] || '/';
 
@@ -63,9 +72,19 @@ export default function useAuth() {
             return { success: true };
         } catch (error) {
             console.error('Erreur login:', error);
+
+            const rawMessage = String(error?.data?.message || error?.message || '').toLowerCase();
+            const requiresPasswordChange =
+                rawMessage.includes('changer votre mot de passe') ||
+                rawMessage.includes('must change password');
+
             return {
                 success: false,
                 message: error.message || 'Email ou mot de passe incorrect',
+                status: error?.status,
+                errors: error?.errors || null,
+                data: error?.data || null,
+                requiresPasswordChange,
             };
         } finally {
             setLoading(false);

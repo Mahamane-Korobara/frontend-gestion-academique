@@ -1,40 +1,42 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus } from 'lucide-react';
 import Link from 'next/link';
 
 // UI & Layout
 import { Button } from '@/components/ui/button';
 import ListPageLayout from '@/components/partage/ListPageLayout';
-import TabNavigation from '@/components/partage/TabNavigation';
+import ListPageFilters from '@/components/partage/ListPageFilters';
 import InfoBadge from '@/components/ui/InfoBadge';
 import DataTableSection from '@/components/partage/DataTableSection';
 
 // Hooks
-import useApi from '@/lib/hooks/useApi';
-import { professeurAPI } from '@/lib/api/endpoints';
-import Header from '@/components/layout/Header';
+import useProfesseurCours from '@/lib/hooks/useProfesseurCours';
 
 // Icons
-import { BookMarked, Users, Clock, FileText } from 'lucide-react';
+import { BookMarked } from 'lucide-react';
 
 export default function MesCoursPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
 
-  const { data: mesCours = [], loading } = useApi(() => professeurAPI.getMesCours());
+  const { cours, total, loading } = useProfesseurCours();
+  const mesCours = cours;
+
+  const resetFilters = () => {
+    setSearchQuery('');
+    setActiveTab('all');
+  };
 
   // Filtrer les données
   const filteredData = useMemo(() => {
-    if (!Array.isArray(mesCours)) return [];
-    
     return mesCours.filter((cours) => {
       const searchLower = searchQuery.toLowerCase();
       const matchSearch = 
         cours.titre?.toLowerCase().includes(searchLower) ||
         cours.code?.toLowerCase().includes(searchLower) ||
-        cours.description?.toLowerCase().includes(searchLower);
+        cours.filiere?.nom?.toLowerCase().includes(searchLower) ||
+        cours.niveau?.nom?.toLowerCase().includes(searchLower);
 
       if (activeTab === 'all') return matchSearch;
       if (activeTab === 'actifs') return matchSearch && !cours.is_archived;
@@ -65,43 +67,13 @@ export default function MesCoursPage() {
     },
     {
       key: 'cours-niveau',
-      label: 'NIVEAU',
-      className: 'min-w-[140px] hidden md:table-cell',
+      label: 'NIVEAU / FILIERE',
+      className: 'min-w-[240px] hidden md:table-cell',
       render: (_, row) => (
         <InfoBadge 
-          label={`${row.niveau?.nom || 'N/A'} - ${row.semestre?.code || 'S1'}`}
+          label={`${row.niveau?.nom || 'N/A'} — ${row.filiere?.nom || 'N/A'}`}
           variant="blue"
         />
-      )
-    },
-    {
-      key: 'cours-etudiants',
-      label: 'ÉTUDIANTS',
-      className: 'min-w-[100px] hidden sm:table-cell text-center',
-      render: (_, row) => (
-        <div className="flex items-center justify-center gap-2">
-          <Users className="w-4 h-4 text-gray-400" />
-          <span className="text-sm font-medium">{row.nb_etudiants || 0}</span>
-        </div>
-      )
-    },
-    {
-      key: 'cours-heures',
-      label: 'HEURES',
-      className: 'min-w-[80px] hidden lg:table-cell text-center',
-      render: (_, row) => (
-        <div className="flex items-center justify-center gap-2">
-          <Clock className="w-4 h-4 text-gray-400" />
-          <span className="text-sm">{row.nb_heures || 0}h</span>
-        </div>
-      )
-    },
-    {
-      key: 'cours-evaluations',
-      label: 'ÉVALUATIONS',
-      className: 'min-w-[80px] hidden lg:table-cell text-center',
-      render: (_, row) => (
-        <span className="text-sm font-medium">{row.nb_evaluations || 0}</span>
       )
     },
     {
@@ -120,63 +92,34 @@ export default function MesCoursPage() {
     }
   ];
 
+  const tabs = [
+    { id: 'all', label: 'Tous', count: total || mesCours.length },
+    { id: 'actifs', label: 'Actifs', count: mesCours.filter((c) => !c.is_archived).length },
+    { id: 'archives', label: 'Archivés', count: mesCours.filter((c) => c.is_archived).length },
+  ];
+
   return (
-    <div>
-      <Header 
-        title="Mes Cours" 
-        description="Gérez vos cours et suivez vos étudiants"
+    <ListPageLayout
+      title="Mes Cours"
+      description="Consultez la liste de vos cours assignés."
+    >
+      <ListPageFilters
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Rechercher par titre, code, niveau ou filière..."
+        onReset={resetFilters}
       />
-      <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto">
-        <ListPageLayout
-          title="Mes Cours"
-          description="Liste de vos cours assignés"
-          actionButton={
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" /> Nouveau Cours
-            </Button>
-          }
-        >
-          {/* Onglets */}
-          <div className="mb-6">
-            <TabNavigation
-              tabs={[
-                { id: 'all', label: 'Tous', count: mesCours.length },
-                { 
-                  id: 'actifs', 
-                  label: 'Actifs', 
-                  count: mesCours.filter(c => !c.is_archived).length 
-                },
-                { 
-                  id: 'archives', 
-                  label: 'Archivés', 
-                  count: mesCours.filter(c => c.is_archived).length 
-                }
-              ]}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-            />
-          </div>
 
-          {/* Barre de recherche */}
-          <div className="mb-6">
-            <input
-              type="text"
-              placeholder="Rechercher par titre ou code..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Tableau des cours */}
-          <DataTableSection
-            columns={columns}
-            data={filteredData}
-            loading={loading}
-            emptyMessage="Aucun cours trouvé"
-          />
-        </ListPageLayout>
-      </main>
-    </div>
+      <DataTableSection
+        title="Cours assignés"
+        columns={columns}
+        data={filteredData}
+        loading={loading}
+        count={filteredData.length}
+      />
+    </ListPageLayout>
   );
 }

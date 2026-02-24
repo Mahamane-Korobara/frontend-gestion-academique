@@ -12,12 +12,13 @@ export default function useApi(apiFunc) { // <--- Bien vérifier le "default"
     const execute = useCallback(async (...params) => {
         try {
             setLoading(true);
+            setError(null);
             const result = await apiFuncRef.current(...params);
             setData(result);
             return result;
         } catch (err) {
             setError(err);
-            throw err;
+            return null;
         } finally {
             setLoading(false);
         }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, RefreshCw } from 'lucide-react';
 import useAuth from '@/lib/hooks/useAuth';
 import { formatDateTime } from '@/lib/utils/format';
@@ -12,9 +12,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function LoginPage() {
-  const { login, isLoading } = useAuth();
+  const { login, changePassword, isLoading } = useAuth();
 
   // État du formulaire
   const [formData, setFormData] = useState({
@@ -26,21 +33,54 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [attemptCount, setAttemptCount] = useState(0);
-  const [lastSuccessfulLogin, setLastSuccessfulLogin] = useState('');
 
-  // Charger la dernière connexion réussie
-  useEffect(() => {
-    const savedLastLogin = localStorage.getItem('lastSuccessfulLogin');
-    if (savedLastLogin) {
-      setLastSuccessfulLogin(savedLastLogin);
-    }
-  }, []);
+  const lastSuccessfulLogin = useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === 'undefined') return () => {};
+      const handler = () => onStoreChange();
+      window.addEventListener('storage', handler);
+      return () => window.removeEventListener('storage', handler);
+    },
+    () => {
+      if (typeof window === 'undefined') return '';
+      return localStorage.getItem('lastSuccessfulLogin') || '';
+    },
+    () => ''
+  );
+  const [forcePasswordModalOpen, setForcePasswordModalOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    email: '',
+    current_password: '',
+    new_password: '',
+    new_password_confirmation: '',
+  });
+  const [passwordErrors, setPasswordErrors] = useState({});
+  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
+  const [showForcedPasswords, setShowForcedPasswords] = useState({
+    current: false,
+    next: false,
+    confirmation: false,
+  });
 
   // Gérer le changement des inputs
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setError('');
+  };
+
+  const handlePasswordFormChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordForm((prev) => ({ ...prev, [name]: value }));
+    setPasswordErrors((prev) => ({ ...prev, [name]: undefined }));
+  };
+
+  const flattenServerErrors = (serverErrors = {}) => {
+    const flat = {};
+    Object.entries(serverErrors).forEach(([key, messages]) => {
+      flat[key] = Array.isArray(messages) ? messages[0] : messages;
+    });
+    return flat;
   };
 
   // Gérer la soumission
@@ -64,10 +104,81 @@ export default function LoginPage() {
     // Tentative de connexion
     const result = await login(formData);
 
+    if (result.requiresPasswordChange) {
+      setPasswordForm({
+        email: formData.email,
+        current_password: formData.password,
+        new_password: '',
+        new_password_confirmation: '',
+      });
+      setShowForcedPasswords({
+        current: false,
+        next: false,
+        confirmation: false,
+      });
+      setPasswordErrors({});
+      setForcePasswordModalOpen(true);
+      return;
+    }
+
     if (!result.success) {
       setError(result.message || 'Erreur de connexion');
       setAttemptCount((prev) => prev + 1);
     }
+  };
+
+  const handleMandatoryPasswordChange = async (e) => {
+    e.preventDefault();
+
+    const localErrors = {};
+    if (!passwordForm.current_password) localErrors.current_password = 'Le mot de passe actuel est requis';
+    if (!passwordForm.new_password) localErrors.new_password = 'Le nouveau mot de passe est requis';
+    else if (passwordForm.new_password.length < 8) localErrors.new_password = 'Minimum 8 caractères';
+    if (!passwordForm.new_password_confirmation) {
+      localErrors.new_password_confirmation = 'La confirmation est requise';
+    } else if (passwordForm.new_password !== passwordForm.new_password_confirmation) {
+      localErrors.new_password_confirmation = 'La confirmation ne correspond pas';
+    }
+
+    if (Object.keys(localErrors).length > 0) {
+      setPasswordErrors(localErrors);
+      return;
+    }
+
+    setIsSubmittingPassword(true);
+    setPasswordErrors({});
+
+    const result = await changePassword({
+      email: passwordForm.email,
+      current_password: passwordForm.current_password,
+      new_password: passwordForm.new_password,
+      new_password_confirmation: passwordForm.new_password_confirmation,
+      password: passwordForm.new_password,
+      password_confirmation: passwordForm.new_password_confirmation,
+    });
+
+    setIsSubmittingPassword(false);
+
+    if (!result.success) {
+      setPasswordErrors(flattenServerErrors(result.errors || {}));
+      if (!result.errors) {
+        setPasswordErrors({ general: result.message || 'Erreur de changement de mot de passe' });
+      }
+      return;
+    }
+
+    setForcePasswordModalOpen(false);
+    setFormData({
+      email: passwordForm.email,
+      password: passwordForm.new_password,
+    });
+    setError('');
+    setAttemptCount(0);
+
+    await login({
+      email: passwordForm.email,
+      password: passwordForm.new_password,
+    });
   };
 
   // Calcul des tentatives restantes
@@ -218,6 +329,151 @@ export default function LoginPage() {
           {APP_NAME} © {new Date().getFullYear()}
         </p>
       </div>
+
+      <Dialog open={forcePasswordModalOpen} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Changement de mot de passe requis</DialogTitle>
+            <DialogDescription>
+              Vous devez définir un nouveau mot de passe avant d&apos;accéder à la plateforme.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleMandatoryPasswordChange} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="forced-email">Email</Label>
+              <Input
+                id="forced-email"
+                value={passwordForm.email}
+                disabled
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="current_password">Mot de passe actuel</Label>
+              <div className="relative">
+                <Input
+                  id="current_password"
+                  name="current_password"
+                  type={showForcedPasswords.current ? 'text' : 'password'}
+                  value={passwordForm.current_password}
+                  onChange={handlePasswordFormChange}
+                  disabled={isSubmittingPassword}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() =>
+                    setShowForcedPasswords((prev) => ({ ...prev, current: !prev.current }))
+                  }
+                  disabled={isSubmittingPassword}
+                >
+                  {showForcedPasswords.current ? (
+                    <EyeOff className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              {passwordErrors.current_password && (
+                <p className="text-xs text-destructive">{passwordErrors.current_password}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="new_password">Nouveau mot de passe</Label>
+              <div className="relative">
+                <Input
+                  id="new_password"
+                  name="new_password"
+                  type={showForcedPasswords.next ? 'text' : 'password'}
+                  value={passwordForm.new_password}
+                  onChange={handlePasswordFormChange}
+                  disabled={isSubmittingPassword}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() =>
+                    setShowForcedPasswords((prev) => ({ ...prev, next: !prev.next }))
+                  }
+                  disabled={isSubmittingPassword}
+                >
+                  {showForcedPasswords.next ? (
+                    <EyeOff className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              {passwordErrors.new_password && (
+                <p className="text-xs text-destructive">{passwordErrors.new_password}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="new_password_confirmation">Confirmer le nouveau mot de passe</Label>
+              <div className="relative">
+                <Input
+                  id="new_password_confirmation"
+                  name="new_password_confirmation"
+                  type={showForcedPasswords.confirmation ? 'text' : 'password'}
+                  value={passwordForm.new_password_confirmation}
+                  onChange={handlePasswordFormChange}
+                  disabled={isSubmittingPassword}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() =>
+                    setShowForcedPasswords((prev) => ({
+                      ...prev,
+                      confirmation: !prev.confirmation,
+                    }))
+                  }
+                  disabled={isSubmittingPassword}
+                >
+                  {showForcedPasswords.confirmation ? (
+                    <EyeOff className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              {passwordErrors.new_password_confirmation && (
+                <p className="text-xs text-destructive">{passwordErrors.new_password_confirmation}</p>
+              )}
+            </div>
+
+            {passwordErrors.general && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{passwordErrors.general}</AlertDescription>
+              </Alert>
+            )}
+
+            <Button type="submit" className="w-full" disabled={isSubmittingPassword}>
+              {isSubmittingPassword ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Mise à jour en cours...
+                </>
+              ) : (
+                'Mettre à jour le mot de passe'
+              )}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
