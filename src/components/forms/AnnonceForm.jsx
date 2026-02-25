@@ -59,9 +59,7 @@ export default function AnnonceForm() {
   // Options de type selon le rôle
   const typeOptions = isProfesseur
     ? [
-        { value: 'cours', label: 'Par Cours' },
-        { value: 'niveau', label: 'Par Niveau' },
-        { value: 'filiere', label: 'Par Filière' }
+        { value: 'cours', label: 'Par Cours' }
       ]
     : [
         { value: 'globale', label: 'Globale' },

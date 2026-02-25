@@ -170,8 +170,6 @@ export default function AnnoncesPage() {
           stats={stats}
           tabs={[
             { id: 'globale', label: 'Globale', count: countAnnoncesByType(annonces, 'globale') },
-            { id: 'filiere', label: 'Par Filière', count: countAnnoncesByType(annonces, 'filiere') },
-            { id: 'niveau', label: 'Par Niveau', count: countAnnoncesByType(annonces, 'niveau') },
             { id: 'cours', label: 'Cours', count: countAnnoncesByType(annonces, 'cours') }
           ]}
           activeTab={activeTab}
