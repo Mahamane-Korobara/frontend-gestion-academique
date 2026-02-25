@@ -21,6 +21,7 @@ function getProgressPercent(saisies, total) {
 export default function NotesPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('all');
+    const [rows, setRows] = useState([]);
 
     const notesModal = useModal(false);
 
@@ -54,6 +55,13 @@ export default function NotesPage() {
             return true;
         });
     }, [evaluations, searchQuery, activeTab]);
+
+    // Transform etudiants from details into rows
+    useMemo(() => {
+        if (selectedEvaluationDetails?.etudiants) {
+            setRows(selectedEvaluationDetails.etudiants);
+        }
+    }, [selectedEvaluationDetails?.etudiants]);
 
     const counts = useMemo(() => {
         const all = evaluations.length;
@@ -217,6 +225,8 @@ export default function NotesPage() {
                 loading={detailsLoading}
                 saving={saving}
                 rowErrors={rowErrors}
+                rows={rows}
+                onRowsChange={setRows}
                 onSave={handleSaveNotes}
             />
         </>

@@ -148,7 +148,7 @@ export default function NotesSaisieModal({
                                                             min={0}
                                                             max={20}
                                                             step="0.01"
-                                                            value={row.note}
+                                                            value={row.note ?? ''}
                                                             onChange={(e) => handleFieldChange(index, 'note', e.target.value)}
                                                             disabled={isLocked || row.is_absent || saving}
                                                             placeholder="0-20"
@@ -170,7 +170,7 @@ export default function NotesSaisieModal({
                                                     </td>
                                                     <td className="px-3 py-2">
                                                         <Input
-                                                            value={row.commentaire}
+                                                            value={row.commentaire ?? ''}
                                                             onChange={(e) => handleFieldChange(index, 'commentaire', e.target.value)}
                                                             disabled={isLocked || saving}
                                                             placeholder="Commentaire (optionnel)"
