@@ -176,6 +176,7 @@ export const professeurAPI = {
     getDashboard: () => apiClient.get('/professeur/dashboard'),
     getMesCours: () => apiClient.get('/professeur/cours'),
     getMesEvaluations: (params) => apiClient.get('/professeur/evaluations', params),
+    getEvaluationNotes: (evaluationId) => apiClient.get(`/professeur/evaluations/${evaluationId}/notes`),
     getFormOptions: () => apiClient.get('/professeur/form-options'),
     saisirNotes: (evaluationId, data) => apiClient.post(`/professeur/evaluations/${evaluationId}/notes`, data),
 };
