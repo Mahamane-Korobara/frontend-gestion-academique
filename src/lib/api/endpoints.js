@@ -109,7 +109,7 @@ export const inscriptionsAPI = {
 // ADMIN - ÉVALUATIONS
 // ============================================
 export const evaluationsAPI = {
-    getAll: () => apiClient.get('/admin/evaluations'),
+    getAll: (params) => apiClient.get('/admin/evaluations', params),
     getByCours: (coursId) => apiClient.get(`/admin/evaluations/cours/${coursId}`),
     getById: (id) => apiClient.get(`/admin/evaluations/${id}`),
     create: (coursId, data) => apiClient.post(`/admin/evaluations/cours/${coursId}`, data),
@@ -175,6 +175,7 @@ export const professeurAPI = {
     getAll: (params) => apiClient.get('/professeur/directory', params),
     getDashboard: () => apiClient.get('/professeur/dashboard'),
     getMesCours: () => apiClient.get('/professeur/cours'),
+    getMesEvaluations: (params) => apiClient.get('/professeur/evaluations', params),
     getFormOptions: () => apiClient.get('/professeur/form-options'),
     saisirNotes: (evaluationId, data) => apiClient.post(`/professeur/evaluations/${evaluationId}/notes`, data),
 };

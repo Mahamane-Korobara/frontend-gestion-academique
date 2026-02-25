@@ -1,7 +1,7 @@
 import { evaluationsAPI } from '@/lib/api/endpoints';
 
 const evaluationsService = {
-    getAll: () => evaluationsAPI.getAll(),
+    getAll: (params) => evaluationsAPI.getAll(params),
     getByCours: (coursId) => evaluationsAPI.getByCours(coursId),
     getById: (id) => evaluationsAPI.getById(id),
     create: (coursId, data) => evaluationsAPI.create(coursId, data),

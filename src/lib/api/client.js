@@ -5,6 +5,7 @@
  * Version optimisée pour la gestion des JSON et des FormData (Upload)
  */
 
+import useAuthStore from '@/lib/store/authStore';
 // Importation des constantes (adapte les chemins selon ton projet)
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -19,6 +20,28 @@ class ApiClient {
     getToken() {
         if (typeof window === 'undefined') return null;
         return localStorage.getItem('token'); // ou STORAGE_KEYS.TOKEN si tu as un fichier de constantes
+    }
+
+    /**
+     * Nettoyage auth + redirection en cas de session expirée
+     */
+    handleUnauthorized() {
+        if (typeof window === 'undefined') return;
+
+        const hadToken = Boolean(localStorage.getItem('token'));
+
+        // Nettoyage stockage navigateur
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+
+        // Nettoyage store Zustand en mémoire
+        const authState = useAuthStore.getState?.();
+        authState?.logout?.();
+
+        // Redirection automatique seulement si on était réellement connecté
+        if (hadToken && window.location.pathname !== '/login') {
+            window.location.replace('/login');
+        }
     }
 
     /**
@@ -67,9 +90,8 @@ class ApiClient {
             error.errors = data?.errors || null;
             error.data = data;
 
-            if (response.status === 401 && typeof window !== 'undefined') {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
+            if (response.status === 401) {
+                this.handleUnauthorized();
             }
 
             throw error;
@@ -158,10 +180,16 @@ class ApiClient {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw {
-                status: response.status,
-                message: errorData.message || 'Erreur lors du téléchargement'
-            };
+            const error = new Error(errorData.message || 'Erreur lors du téléchargement');
+            error.status = response.status;
+            error.errors = errorData?.errors || null;
+            error.data = errorData;
+
+            if (response.status === 401) {
+                this.handleUnauthorized();
+            }
+
+            throw error;
         }
 
         return response.blob();

@@ -3,13 +3,14 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import evaluationsService from '@/lib/services/evaluations.service';
 
-export default function useEvaluations() {
+export default function useEvaluations(initialParams = {}) {
     const [evaluations, setEvaluations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     const abortRef = useRef(null);
     const initialFetchDone = useRef(false);
+    const paramsRef = useRef(initialParams);
 
     const fetchAll = useCallback(async () => {
         abortRef.current?.abort();
@@ -17,7 +18,7 @@ export default function useEvaluations() {
         setLoading(true);
         setError(null);
         try {
-            const res = await evaluationsService.getAll();
+            const res = await evaluationsService.getAll(paramsRef.current);
             if (!abortRef.current.signal.aborted) {
                 setEvaluations(res?.data || []);
                 initialFetchDone.current = true;

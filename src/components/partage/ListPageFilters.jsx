@@ -21,6 +21,8 @@ export default function ListPageFilters({
   hideSearch = false,
   inlineFilters = false, 
   stats = null,
+  statsPrimaryLabel = 'créneau',
+  statsSecondaryLabel = 'jours',
 }) {
   return (
     <div className="space-y-4">
@@ -53,12 +55,6 @@ export default function ListPageFilters({
           {/* Bloc Filtres */}
           {filterOptions.length > 0 && (
             <div className={`flex flex-wrap items-center gap-3 ${inlineFilters ? 'flex-row' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'}`}>
-              
-              {inlineFilters && (
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">
-                  Filtrer :
-                </span>
-              )}
 
               {filterOptions.map((filter) => (
                 <div key={filter.key} style={inlineFilters ? { width: filter.width || '160px' } : {}}>
@@ -85,7 +81,7 @@ export default function ListPageFilters({
               {stats && (
                 <div className="ml-auto bg-gray-50 border border-gray-100 px-3 py-1 rounded-full">
                    <span className="text-[11px] text-gray-400 font-medium">
-                    {stats.total} créneau{stats.total > 1 ? 'x' : ''} {stats.jours && `· ${stats.jours} jours`}
+                    {stats.total} {statsPrimaryLabel}{stats.total > 1 ? 's' : ''} {stats.jours && `· ${stats.jours} ${statsSecondaryLabel}`}
                    </span>
                 </div>
               )}

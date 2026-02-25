@@ -1,16 +1,26 @@
 'use client';
 
-import { useState } from 'react';
-import { CalendarClock } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 import ListPageLayout from '@/components/partage/ListPageLayout';
 import ListPageFilters from '@/components/partage/ListPageFilters';
 import CalendrierSection from '@/components/calendrier/CalendrierSection';
+import CalendrierEvaluationsSection from '@/components/calendrier/CalendrierEvaluationsSection';
 
 import useEmploiDuTempsProfesseur from '@/lib/hooks/useEmploiDuTempsProfesseur';
+import useEvaluationsProfesseur from '@/lib/hooks/useEvaluationsProfesseur';
+import useProfesseurCours from '@/lib/hooks/useProfesseurCours';
 
 export default function EmploiDuTempsProfesseurPage() {
     const [activeTab, setActiveTab] = useState('calendrier');
+    const [evaluationFilters, setEvaluationFilters] = useState({
+        filiere_id: null,
+        niveau_id: null,
+        semestre_id: null,
+        cours_id: null,
+        type_evaluation_id: null,
+        statut: null,
+    });
 
     const {
         creneaux,
@@ -25,9 +35,138 @@ export default function EmploiDuTempsProfesseurPage() {
         resetFilters,
     } = useEmploiDuTempsProfesseur();
 
+    const {
+        evaluations,
+        loading: evaluationsLoading,
+        semestresOptions: semestresEvaluationsOptions,
+        typeOptions,
+        statutOptions,
+    } = useEvaluationsProfesseur();
+
+    const {
+        cours: mesCours,
+    } = useProfesseurCours();
+
+    const coursById = useMemo(() => {
+        const map = new Map();
+
+        (mesCours || []).forEach((cours) => {
+            const filiere = cours?.niveau?.filiere || cours?.filiere || null;
+            const niveau = cours?.niveau
+                ? {
+                      ...cours.niveau,
+                      filiere,
+                  }
+                : null;
+
+            if (!cours?.id) return;
+
+            map.set(String(cours.id), {
+                ...cours,
+                filiere_id: cours?.filiere_id ?? filiere?.id ?? null,
+                niveau_id: cours?.niveau_id ?? niveau?.id ?? null,
+                niveau,
+            });
+        });
+
+        return map;
+    }, [mesCours]);
+
+    const filieresEvaluationsOptions = useMemo(() => {
+        const map = new Map();
+
+        (mesCours || []).forEach((cours) => {
+            const filiere = cours?.niveau?.filiere || cours?.filiere;
+            if (!filiere?.id) return;
+
+            const id = String(filiere.id);
+            if (!map.has(id)) {
+                map.set(id, {
+                    value: id,
+                    label: filiere.nom || `Filière ${id}`,
+                });
+            }
+        });
+
+        return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+    }, [mesCours]);
+
+    const niveauxEvaluationsOptions = useMemo(() => {
+        const map = new Map();
+
+        (mesCours || []).forEach((cours) => {
+            const filiere = cours?.niveau?.filiere || cours?.filiere;
+            const niveau = cours?.niveau;
+            if (!niveau?.id) return;
+
+            if (
+                evaluationFilters.filiere_id &&
+                String(filiere?.id) !== String(evaluationFilters.filiere_id)
+            ) {
+                return;
+            }
+
+            const id = String(niveau.id);
+            if (!map.has(id)) {
+                map.set(id, {
+                    value: id,
+                    label: filiere?.nom ? `${niveau.nom} — ${filiere.nom}` : (niveau.nom || `Niveau ${id}`),
+                });
+            }
+        });
+
+        return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+    }, [mesCours, evaluationFilters.filiere_id]);
+
+    const coursEvaluationsOptions = useMemo(() => {
+        return (mesCours || [])
+            .filter((cours) => {
+                const filiere = cours?.niveau?.filiere || cours?.filiere;
+                const niveau = cours?.niveau;
+
+                if (
+                    evaluationFilters.filiere_id &&
+                    String(filiere?.id) !== String(evaluationFilters.filiere_id)
+                ) {
+                    return false;
+                }
+
+                if (
+                    evaluationFilters.niveau_id &&
+                    String(niveau?.id) !== String(evaluationFilters.niveau_id)
+                ) {
+                    return false;
+                }
+
+                return true;
+            })
+            .map((cours) => ({
+                value: String(cours.id),
+                label: cours.code ? `${cours.code} — ${cours.titre}` : (cours.titre || `Cours ${cours.id}`),
+            }))
+            .sort((a, b) => a.label.localeCompare(b.label));
+    }, [mesCours, evaluationFilters.filiere_id, evaluationFilters.niveau_id]);
+
+    const updateEvaluationFilter = (key, value) => {
+        setEvaluationFilters((prev) => {
+            const next = { ...prev, [key]: value || null };
+
+            if (key === 'filiere_id') {
+                next.niveau_id = null;
+                next.cours_id = null;
+            }
+
+            if (key === 'niveau_id') {
+                next.cours_id = null;
+            }
+
+            return next;
+        });
+    };
+
     const tabs = [
         { id: 'calendrier', label: 'Calendrier', count: creneaux.length },
-        { id: 'examens', label: "Calendrier d'examen" },
+        { id: 'examens', label: "Calendrier d'examen", count: evaluations.length },
     ];
 
     return (
@@ -63,16 +202,26 @@ export default function EmploiDuTempsProfesseurPage() {
             )}
 
             {activeTab === 'examens' && (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
-                    <div className="flex items-start gap-3">
-                        <CalendarClock className="mt-0.5 h-5 w-5 shrink-0" />
-                        <div>
-                            <h3 className="text-sm font-semibold">Calendrier d&apos;examen</h3>
-                            <p className="mt-1 text-sm">
-                                Cette vue est en cours de developpement.
-                            </p>
-                        </div>
-                    </div>
+                <div className="mt-4 animate-in fade-in slide-in-from-bottom-2">
+                    <CalendrierEvaluationsSection
+                        evaluations={evaluations}
+                        loading={evaluationsLoading}
+                        filters={evaluationFilters}
+                        filieresOptions={filieresEvaluationsOptions}
+                        niveauxOptions={niveauxEvaluationsOptions}
+                        semestresOptions={semestresEvaluationsOptions}
+                        coursOptions={coursEvaluationsOptions}
+                        typeOptions={typeOptions}
+                        statutOptions={statutOptions}
+                        coursById={coursById}
+                        allowDateCorrection={false}
+                        onFiltreFiliere={(v) => updateEvaluationFilter('filiere_id', v)}
+                        onFiltreNiveau={(v) => updateEvaluationFilter('niveau_id', v)}
+                        onFiltreSemestre={(v) => updateEvaluationFilter('semestre_id', v)}
+                        onFiltreCours={(v) => updateEvaluationFilter('cours_id', v)}
+                        onFiltreType={(v) => updateEvaluationFilter('type_evaluation_id', v)}
+                        onFiltreStatut={(v) => updateEvaluationFilter('statut', v)}
+                    />
                 </div>
             )}
         </ListPageLayout>

@@ -1,13 +1,25 @@
 import { Trash2, BookOpen } from 'lucide-react';
 import { TYPE_ICONS } from '@/lib/utils/constants';
-import { getProfNom, getStyles } from '@/lib/utils/emploiDuTempsHelpers';;
+import { getProfNom, getStyles } from '@/lib/utils/emploiDuTempsHelpers';
 
+function getDisplayDate(creneau) {
+    if (creneau?.dateLabel) return creneau.dateLabel;
 
+    const raw = creneau?.date || creneau?.dateIso || creneau?.date_iso;
+    if (!raw || typeof raw !== 'string') return null;
+
+    const part = raw.slice(0, 10);
+    const [year, month, day] = part.split('-');
+    if (!year || !month || !day) return null;
+
+    return `${day}/${month}/${year}`;
+}
 
 export default function CreneauCard({ creneau, onDelete, compact = false }) {
     const styles = getStyles(creneau.type?.color);
     const Icon   = TYPE_ICONS[creneau.type?.code] || BookOpen;
     const canDelete = typeof onDelete === 'function';
+    const dateLabel = getDisplayDate(creneau);
 
     if (compact) {
         return (
@@ -29,7 +41,9 @@ export default function CreneauCard({ creneau, onDelete, compact = false }) {
                     )}
                 </div>
                 <p className="text-[9px] text-gray-400 truncate pl-2.5">
-                    {creneau.creneau?.debut}–{creneau.creneau?.fin}
+                    {dateLabel
+                        ? `${dateLabel} · ${creneau.creneau?.debut}–${creneau.creneau?.fin}`
+                        : `${creneau.creneau?.debut}–${creneau.creneau?.fin}`}
                 </p>
             </div>
         );
@@ -53,6 +67,7 @@ export default function CreneauCard({ creneau, onDelete, compact = false }) {
             </div>
             <p className="text-xs font-bold text-gray-800 truncate">{creneau.cours?.titre || '—'}</p>
             <p className="text-[10px] text-gray-500 truncate">{creneau.cours?.code}</p>
+            {dateLabel && <p className="text-[10px] text-gray-500 mt-1 truncate">📅 {dateLabel}</p>}
             <p className="text-[10px] text-gray-500 mt-1 truncate">👤 {getProfNom(creneau)}</p>
             {creneau.salle  && <p className="text-[10px] text-gray-400 truncate">🏛️ {creneau.salle.nom}</p>}
             {creneau.niveau && <p className="text-[10px] text-gray-400 truncate">📚 {creneau.niveau.nom}</p>}

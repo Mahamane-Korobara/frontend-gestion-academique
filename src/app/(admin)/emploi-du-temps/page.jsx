@@ -11,17 +11,28 @@ import useNiveaux    from '@/lib/hooks/useNiveaux';
 import useSemestres  from '@/lib/hooks/useSemestres';
 import useFilieres   from '@/lib/hooks/useFilieres';
 import useCours      from '@/lib/hooks/useCours';
+import useEvaluations from '@/lib/hooks/useEvaluations';
 
 // Hook et service extraits
 import useEmploiDuTemps from '@/lib/hooks/useEmploiDuTemps';
 
 import CreneauForm       from '@/components/calendrier/CreneauForm';
 import CalendrierSection from '@/components/calendrier/CalendrierSection';
+import CalendrierEvaluationsSection from '@/components/calendrier/CalendrierEvaluationsSection';
+import { TYPES_EVALUATIONS } from '@/lib/utils/constants';
 
 export default function EmploiDuTempsPage() {
     const [activeTab, setActiveTab]       = useState('creation');
     const [createKey, setCreateKey]       = useState(0);
     const [selectedCreneau, setSelectedCreneau] = useState(null);
+    const [evaluationFilters, setEvaluationFilters] = useState({
+        filiere_id: null,
+        niveau_id: null,
+        semestre_id: null,
+        cours_id: null,
+        type_evaluation_id: null,
+        statut: null,
+    });
 
     const deleteModal = useModal();
 
@@ -40,7 +51,13 @@ export default function EmploiDuTempsPage() {
     const { niveaux, niveauxOptions }                      = useNiveaux();
     const { semestresOptions, semestreActif, anneeActive } = useSemestres();
     const { activeFilieresOptions }                        = useFilieres();
-    const { cours }                                        = useCours();
+    const { cours }                                        = useCours({ per_page: 200 });
+    const {
+        evaluations,
+        loading: evaluationsLoading,
+        statutOptions,
+        updateEvaluation,
+    } = useEvaluations({ per_page: 500 });
 
     const niveauxOptionsWithFiliere = useMemo(() => {
         const niveauxById = new Map(
@@ -67,10 +84,83 @@ export default function EmploiDuTempsPage() {
         updateFilter('semestre_id', String(semestreActif.id));
     }, [semestreActif?.id, filters.semestre_id, updateFilter]);
 
+    const effectiveEvaluationFilters = useMemo(
+        () => ({
+            ...evaluationFilters,
+            semestre_id:
+                evaluationFilters.semestre_id ??
+                (semestreActif?.id ? String(semestreActif.id) : null),
+        }),
+        [evaluationFilters, semestreActif?.id]
+    );
+
     // Options pour le filtre "Cours" dans le calendrier
-    const coursOptions = useMemo(() =>
-        cours.map(c => ({ value: String(c.id), label: c.titre })),
-    [cours]);
+    const coursOptions = useMemo(
+        () =>
+            (cours || []).map((c) => ({
+                value: String(c.id),
+                label: c.code ? `${c.code} — ${c.titre}` : c.titre,
+            })),
+        [cours]
+    );
+
+    const coursById = useMemo(
+        () => new Map((cours || []).map((c) => [String(c.id), c])),
+        [cours]
+    );
+
+    const typeEvaluationOptions = useMemo(
+        () => TYPES_EVALUATIONS.map((t) => ({ value: String(t.value), label: t.label })),
+        []
+    );
+
+    const niveauxOptionsForEvaluations = useMemo(() => {
+        if (!effectiveEvaluationFilters.filiere_id) return niveauxOptionsWithFiliere;
+
+        return niveauxOptionsWithFiliere.filter(
+            (n) => String(n.filiere_id) === String(effectiveEvaluationFilters.filiere_id)
+        );
+    }, [niveauxOptionsWithFiliere, effectiveEvaluationFilters.filiere_id]);
+
+    const coursOptionsForEvaluations = useMemo(() => {
+        return (cours || [])
+            .filter((c) => {
+                const filiereId = c.niveau?.filiere?.id ?? c.filiere_id;
+                const niveauId = c.niveau?.id ?? c.niveau_id;
+                const semestreId = c.semestre?.id ?? c.semestre_id;
+
+                if (effectiveEvaluationFilters.filiere_id && String(filiereId) !== String(effectiveEvaluationFilters.filiere_id)) return false;
+                if (effectiveEvaluationFilters.niveau_id && String(niveauId) !== String(effectiveEvaluationFilters.niveau_id)) return false;
+                if (effectiveEvaluationFilters.semestre_id && String(semestreId) !== String(effectiveEvaluationFilters.semestre_id)) return false;
+                return true;
+            })
+            .map((c) => ({
+                value: String(c.id),
+                label: c.code ? `${c.code} — ${c.titre}` : c.titre,
+            }));
+    }, [
+        cours,
+        effectiveEvaluationFilters.filiere_id,
+        effectiveEvaluationFilters.niveau_id,
+        effectiveEvaluationFilters.semestre_id,
+    ]);
+
+    const updateEvaluationFilter = (key, value) => {
+        setEvaluationFilters((prev) => {
+            const next = { ...prev, [key]: value || null };
+
+            if (key === 'filiere_id') {
+                next.niveau_id = null;
+                next.cours_id = null;
+            }
+
+            if (key === 'niveau_id') {
+                next.cours_id = null;
+            }
+
+            return next;
+        });
+    };
 
     const onCreateCreneau = (data) =>
         handleCreate(
@@ -107,6 +197,7 @@ export default function EmploiDuTempsPage() {
     const tabs = [
         { id: 'creation',   label: 'Créer un créneau' },
         { id: 'calendrier', label: 'Calendrier', count: creneaux.length },
+        { id: 'evaluations', label: 'Calendrier évaluations', count: evaluations.length },
     ];
 
     return (
@@ -134,7 +225,7 @@ export default function EmploiDuTempsPage() {
                     <div className="mb-5">
                         <h2 className="text-base font-bold text-gray-800">Planifier une séance</h2>
                         <p className="text-sm text-gray-500 mt-0.5">
-                            Sélectionnez un cours — les informations associées s'afficheront automatiquement.
+                            Sélectionnez un cours — les informations associées s&apos;afficheront automatiquement.
                         </p>
                     </div>
                     <CreneauForm
@@ -163,6 +254,32 @@ export default function EmploiDuTempsPage() {
                         onFiltreSemestre={(v) => updateFilter('semestre_id', v)}
                         onFiltreCours={(v)    => updateFilter('cours_id',    v)}
                         onDelete={handleDeleteClick}
+                    />
+                </div>
+            )}
+
+            {activeTab === 'evaluations' && (
+                <div className="mt-4 animate-in fade-in slide-in-from-bottom-2">
+                    <CalendrierEvaluationsSection
+                        evaluations={evaluations}
+                        loading={evaluationsLoading}
+                        filters={effectiveEvaluationFilters}
+                        filieresOptions={activeFilieresOptions}
+                        niveauxOptions={niveauxOptionsForEvaluations}
+                        semestresOptions={semestresOptions}
+                        coursOptions={coursOptionsForEvaluations}
+                        typeOptions={typeEvaluationOptions}
+                        statutOptions={statutOptions}
+                        coursById={coursById}
+                        coursOptionsForEdit={coursOptions}
+                        semestresOptionsForEdit={semestresOptions}
+                        onUpdateEvaluation={updateEvaluation}
+                        onFiltreFiliere={(v) => updateEvaluationFilter('filiere_id', v)}
+                        onFiltreNiveau={(v) => updateEvaluationFilter('niveau_id', v)}
+                        onFiltreSemestre={(v) => updateEvaluationFilter('semestre_id', v)}
+                        onFiltreCours={(v) => updateEvaluationFilter('cours_id', v)}
+                        onFiltreType={(v) => updateEvaluationFilter('type_evaluation_id', v)}
+                        onFiltreStatut={(v) => updateEvaluationFilter('statut', v)}
                     />
                 </div>
             )}
