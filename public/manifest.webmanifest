@@ -1,6 +1,6 @@
 {
-  "name": "MASTER EN ÉCONOMIE QUANTITATIVE CALCULABLE",
-  "short_name": "MASTER EN ÉCONOMIE QUANTITATIVE CALCULABLE",
+  "name": "MEQC",
+  "short_name": "MEQC",
   "description": "Application web de gestion academique",
   "id": "/?app=meqc-v2",
   "start_url": "/?source=pwa-v2",

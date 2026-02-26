@@ -18,6 +18,19 @@ function getProgressPercent(saisies, total) {
     return Math.min(100, Math.round((Number(saisies || 0) / Number(total)) * 100));
 }
 
+function normalizeModalRows(etudiants = []) {
+    return (etudiants || []).map((row) => ({
+        etudiant_id: row.etudiant_id,
+        matricule: row.matricule || '—',
+        nom_complet: row.nom_complet || 'Étudiant',
+        note: row.note === null || row.note === undefined ? '' : String(row.note),
+        is_absent: Boolean(row.is_absent),
+        commentaire: row.commentaire || '',
+        locked: Boolean(row.locked),
+        statut: row.statut || null,
+    }));
+}
+
 export default function NotesPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('all');
@@ -37,6 +50,8 @@ export default function NotesPage() {
         resetSelection,
     } = useNotesProfesseur();
 
+    const isValidatedState = (etat) => etat === 'validee' || etat === 'partielle';
+
     const filteredData = useMemo(() => {
         const searchLower = searchQuery.trim().toLowerCase();
 
@@ -51,29 +66,23 @@ export default function NotesPage() {
             if (!matchSearch) return false;
 
             if (activeTab === 'en_cours') return evaluation.etat_notes === 'en_cours';
-            if (activeTab === 'validees') return evaluation.etat_notes === 'validee';
+            if (activeTab === 'validees') return isValidatedState(evaluation.etat_notes);
             return true;
         });
     }, [evaluations, searchQuery, activeTab]);
 
-    // Transform etudiants from details into rows
-    useMemo(() => {
-        if (selectedEvaluationDetails?.etudiants) {
-            setRows(selectedEvaluationDetails.etudiants);
-        }
-    }, [selectedEvaluationDetails?.etudiants]);
-
     const counts = useMemo(() => {
         const all = evaluations.length;
         const enCours = evaluations.filter((e) => e.etat_notes === 'en_cours').length;
-        const validees = evaluations.filter((e) => e.etat_notes === 'validee').length;
+        const validees = evaluations.filter((e) => isValidatedState(e.etat_notes)).length;
         return { all, enCours, validees };
     }, [evaluations]);
 
     const openNotesModal = async (evaluationId) => {
         notesModal.open();
         try {
-            await loadEvaluationDetails(evaluationId);
+            const data = await loadEvaluationDetails(evaluationId);
+            setRows(normalizeModalRows(data?.etudiants || []));
         } catch (error) {
             toast.error(error?.message || 'Impossible de charger la grille de notes');
         }
@@ -81,14 +90,21 @@ export default function NotesPage() {
 
     const closeNotesModal = () => {
         notesModal.close();
+        setRows([]);
         resetSelection();
     };
 
-    const handleSaveNotes = async ({ rows, soumettre }) => {
+    const handleSaveNotes = async ({ soumettre }) => {
         try {
-            await saveNotes({ rows, soumettre });
+            const result = await saveNotes({ rows, soumettre });
+
+            if (result?.details?.etudiants) {
+                setRows(normalizeModalRows(result.details.etudiants));
+            }
+
             if (soumettre) {
                 notesModal.close();
+                setRows([]);
                 resetSelection();
             }
         } catch {
@@ -157,12 +173,17 @@ export default function NotesPage() {
             key: 'eval-statut',
             label: 'STATUT',
             className: 'min-w-[110px] hidden sm:table-cell',
-            render: (_, row) => (
-                <StatusBadge
-                    status={row.etat_notes === 'validee' ? 'Validée' : 'En cours'}
-                    variant={row.etat_notes === 'validee' ? 'success' : 'warning'}
-                />
-            ),
+            render: (_, row) => {
+                const isValidee = row.etat_notes === 'validee';
+                const isPartielle = row.etat_notes === 'partielle';
+
+                return (
+                    <StatusBadge
+                        status={isValidee ? 'Validée' : isPartielle ? 'Partielle' : 'En cours'}
+                        variant={isValidee ? 'success' : isPartielle ? 'info' : 'warning'}
+                    />
+                );
+            },
         },
         {
             key: 'eval-actions',

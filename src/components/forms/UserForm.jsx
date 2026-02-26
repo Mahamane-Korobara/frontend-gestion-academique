@@ -32,6 +32,7 @@ export default function UserForm({
     email_personnel: '',
     telephone_etudiant: '',
     telephone_urgence: '',
+    telephone_professeur: '',
     code_professeur: '',
     specialite: '',
     grade: '',
@@ -71,6 +72,7 @@ export default function UserForm({
       email_personnel: et.email_personnel || '',
       telephone_etudiant: et.telephone || '',
       telephone_urgence: et.telephone_urgence || '',
+      telephone_professeur: pr.telephone || user.phone || '',
       code_professeur: pr.code_professeur || '',
       specialite: pr.specialite || '',
       grade: pr.grade || '',
@@ -139,10 +141,13 @@ export default function UserForm({
         ...(formData.telephone_urgence && { telephone_urgence: formData.telephone_urgence }),
       };
     } else {
+      const telephoneProf = formData.telephone_professeur?.trim();
+      submitData.phone = telephoneProf || undefined;
       submitData.professeur = {
         code_professeur: formData.code_professeur,
         nom: formData.nom,
         prenom: formData.prenom,
+        telephone: telephoneProf || 'Non renseigne',
         /* Données optionnelles mises en suspens
         ...(formData.specialite && { specialite: formData.specialite }),
         ...(formData.grade && { grade: formData.grade }),
@@ -354,6 +359,16 @@ export default function UserForm({
               disabled={loading}
               required
               placeholder="PROF2025001"
+            />
+            <FormInput
+              id="telephone_professeur"
+              label="Téléphone (optionnel)"
+              type="tel"
+              value={formData.telephone_professeur}
+              onChange={(e) => handleChange('telephone_professeur', e.target.value)}
+              error={allErrors.telephone_professeur || allErrors.telephone}
+              disabled={loading}
+              placeholder="+22370000000"
             />
             {/* Données optionnelles mises en suspens
             <FormSelect

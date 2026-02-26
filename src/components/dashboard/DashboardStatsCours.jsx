@@ -3,7 +3,6 @@
 import React from 'react';
 import { Users, Check, BarChart3 } from 'lucide-react';
 import DataTableSection from '@/components/partage/DataTableSection';
-import { formatNumber } from '@/lib/utils/format';
 
 export default function DashboardStatsCours({ statsCours = [], loading = false }) {
   const columns = [
@@ -36,17 +35,6 @@ export default function DashboardStatsCours({ statsCours = [], loading = false }
         </div>
       ),
     },
-    {
-      key: 'moyenne',
-      label: 'Moyenne',
-      className: 'text-right',
-      cellClassName: 'text-right',
-      render: (value) => (
-        <span className="font-bold text-gray-900">
-          {formatNumber(parseFloat(value), 2)}/20
-        </span>
-      ),
-    },
   ];
 
   // Gestion de l'affichage si aucune donnée
@@ -55,7 +43,7 @@ export default function DashboardStatsCours({ statsCours = [], loading = false }
       <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-500 shadow-sm">
         <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-20" />
         <p className="text-lg font-medium">Aucune statistique disponible</p>
-        <p className="text-sm">Vous n'avez pas encore de cours ou de notes enregistrées.</p>
+        <p className="text-sm">Vous n&apos;avez pas encore de cours ou de notes enregistrées.</p>
       </div>
     );
   }

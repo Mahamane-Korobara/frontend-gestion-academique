@@ -14,6 +14,10 @@ function normalizeEvaluations(evaluations = []) {
         let etatNotes = ev?.etat_notes || 'en_cours';
         if (nbNotesTotales > 0 && nbNotesValidees >= nbNotesTotales) {
             etatNotes = 'validee';
+        } else if (nbNotesValidees > 0) {
+            etatNotes = 'partielle';
+        } else {
+            etatNotes = 'en_cours';
         }
 
         return {
@@ -116,12 +120,13 @@ export default function useNotesProfesseur() {
                     : 'Notes enregistrées en brouillon'
             );
 
-            await Promise.all([
-                refetchEvaluations(),
-                loadEvaluationDetails(selectedEvaluationId),
-            ]);
+            await refetchEvaluations();
+            const updatedDetails = await loadEvaluationDetails(selectedEvaluationId);
 
-            return res;
+            return {
+                response: res,
+                details: updatedDetails,
+            };
         } catch (error) {
             if (error?.status === 422 && error?.errors) {
                 setRowErrors(error.errors);

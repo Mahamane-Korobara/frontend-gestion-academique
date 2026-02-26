@@ -84,8 +84,18 @@ class ApiClient {
         }
 
         if (!response.ok) {
+            const firstValidationError = data?.errors
+                ? Object.values(data.errors)?.flat?.()?.[0]
+                : null;
+            const backendMessage =
+                (data?.message && data.message !== 'Erreur' ? data.message : null) ||
+                data?.error ||
+                firstValidationError ||
+                data?.message ||
+                'Une erreur est survenue sur le serveur';
+
             // Utiliser une vraie Error avec propriétés custom
-            const error = new Error(data?.message || 'Une erreur est survenue sur le serveur');
+            const error = new Error(backendMessage);
             error.status = response.status;
             error.errors = data?.errors || null;
             error.data = data;
@@ -151,6 +161,18 @@ class ApiClient {
     async put(endpoint, body = {}) {
         const response = await fetch(`${this.baseURL}${endpoint}`, {
             method: 'PUT',
+            headers: this.getHeaders(),
+            body: JSON.stringify(body),
+        });
+        return this.handleResponse(response);
+    }
+
+    /**
+     * PATCH Request
+     */
+    async patch(endpoint, body = {}) {
+        const response = await fetch(`${this.baseURL}${endpoint}`, {
+            method: 'PATCH',
             headers: this.getHeaders(),
             body: JSON.stringify(body),
         });

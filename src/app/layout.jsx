@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: 'MASTER EN ÉCONOMIE QUANTITATIVE CALCULABLE',
+  title: 'MEQC',
   description: 'Application web de gestion academique',
   manifest: '/manifest.webmanifest',
   icons: {
@@ -27,7 +27,7 @@ export const metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: 'MASTER EN ÉCONOMIE QUANTITATIVE CALCULABLE',
+    title: 'MEQC',
     statusBarStyle: 'default',
   },
 };

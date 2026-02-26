@@ -1,1 +1,5 @@
-export default function Temp() { return null; }
+import { redirect } from 'next/navigation';
+
+export default function NotesValidationRedirectPage() {
+    redirect('/notes');
+}

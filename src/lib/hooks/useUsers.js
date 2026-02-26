@@ -138,6 +138,7 @@ export const useUsers = () => {
             console.error('Erreur création:', err.message, {
                 status: err.status,
                 errors: err.errors,
+                data: err.data,
             });
             throw err;
         }

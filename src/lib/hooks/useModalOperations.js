@@ -22,7 +22,7 @@ export function useModalOperations() {
                 setValidationErrors(error.errors);
                 toast.error('Veuillez corriger les erreurs du formulaire');
             } else {
-                const message = error.message || errorMessage;
+                const message = error?.data?.error || error.message || errorMessage;
                 toast.error(message);
             }
             return { success: false, error };

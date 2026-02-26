@@ -114,6 +114,14 @@ export default function EmploiDuTempsPage() {
         []
     );
 
+    const visibleEvaluationsCount = useMemo(
+        () =>
+            (evaluations || []).filter((ev) =>
+                ['planifiee', 'en_cours'].includes(String(ev?.statut || '').toLowerCase())
+            ).length,
+        [evaluations]
+    );
+
     const niveauxOptionsForEvaluations = useMemo(() => {
         if (!effectiveEvaluationFilters.filiere_id) return niveauxOptionsWithFiliere;
 
@@ -197,7 +205,7 @@ export default function EmploiDuTempsPage() {
     const tabs = [
         { id: 'creation',   label: 'Créer un créneau' },
         { id: 'calendrier', label: 'Calendrier', count: creneaux.length },
-        { id: 'evaluations', label: 'Calendrier évaluations', count: evaluations.length },
+        { id: 'evaluations', label: 'Calendrier évaluations', count: visibleEvaluationsCount },
     ];
 
     return (

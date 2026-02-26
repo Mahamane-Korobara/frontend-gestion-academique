@@ -21,6 +21,7 @@ const VUES = [
 ];
 
 const JOURS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+const STATUTS_AFFICHES = new Set(['planifiee', 'en_cours']);
 
 const typeStyleFromEvaluation = (typeEvaluation) => {
     const id = Number(typeEvaluation?.id);
@@ -118,8 +119,14 @@ export default function CalendrierEvaluationsSection({
     const editSundayModal = useModal();
     const { isSubmitting, validationErrors, handleUpdate } = useModalOperations();
 
+    const evaluationsActives = useMemo(() => {
+        return (evaluations || []).filter((ev) =>
+            STATUTS_AFFICHES.has(String(ev?.statut || '').toLowerCase())
+        );
+    }, [evaluations]);
+
     const evaluationsFiltrees = useMemo(() => {
-        return (evaluations || []).filter((ev) => {
+        return evaluationsActives.filter((ev) => {
             const coursDetail = coursById.get(String(ev.cours?.id));
             const filiereId = coursDetail?.niveau?.filiere?.id ?? coursDetail?.filiere_id ?? null;
             const niveauId = coursDetail?.niveau?.id ?? coursDetail?.niveau_id ?? null;
@@ -133,7 +140,20 @@ export default function CalendrierEvaluationsSection({
 
             return true;
         });
-    }, [coursById, evaluations, filters]);
+    }, [coursById, evaluationsActives, filters]);
+
+    const statutOptionsFiltrees = useMemo(() => {
+        const options = (statutOptions || []).filter((option) =>
+            STATUTS_AFFICHES.has(String(option?.value || '').toLowerCase())
+        );
+
+        if (options.length > 0) return options;
+
+        return [
+            { value: 'planifiee', label: 'Planifiée' },
+            { value: 'en_cours', label: 'En cours' },
+        ];
+    }, [statutOptions]);
 
     const mappedEvaluations = useMemo(() => {
         return evaluationsFiltrees.map((ev) => {
@@ -272,17 +292,17 @@ export default function CalendrierEvaluationsSection({
             });
         }
 
-        if (statutOptions.length > 0) {
+        if (statutOptionsFiltrees.length > 0) {
             options.push({
                 key: 'statut',
                 label: 'Statut',
-                options: statutOptions,
+                options: statutOptionsFiltrees,
                 width: '170px',
             });
         }
 
         return options;
-    }, [coursOptions, filieresOptions, niveauxOptions, semestresOptions, statutOptions, typeOptions]);
+    }, [coursOptions, filieresOptions, niveauxOptions, semestresOptions, statutOptionsFiltrees, typeOptions]);
 
     const handleFilterChange = (key, value) => {
         const val = value || null;

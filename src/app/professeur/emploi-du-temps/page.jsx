@@ -164,9 +164,17 @@ export default function EmploiDuTempsProfesseurPage() {
         });
     };
 
+    const visibleEvaluationsCount = useMemo(
+        () =>
+            (evaluations || []).filter((ev) =>
+                ['planifiee', 'en_cours'].includes(String(ev?.statut || '').toLowerCase())
+            ).length,
+        [evaluations]
+    );
+
     const tabs = [
         { id: 'calendrier', label: 'Calendrier', count: creneaux.length },
-        { id: 'examens', label: "Calendrier d'examen", count: evaluations.length },
+        { id: 'examens', label: "Calendrier d'examen", count: visibleEvaluationsCount },
     ];
 
     return (
