@@ -44,7 +44,7 @@ export default function useEmploiDuTemps() {
         } finally {
             if (!abortRef.current?.signal.aborted) setLoading(false);
         }
-    }, [filters.niveau_id, filters.semestre_id, filters.filiere_id, filters.cours_id]);
+    }, [filters]);
 
     useEffect(() => {
         fetchCreneaux();

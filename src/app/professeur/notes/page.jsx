@@ -50,7 +50,7 @@ export default function NotesPage() {
         resetSelection,
     } = useNotesProfesseur();
 
-    const isValidatedState = (etat) => etat === 'validee' || etat === 'partielle';
+    const isSubmittedState = (etat) => etat === 'soumise' || etat === 'partielle';
 
     const filteredData = useMemo(() => {
         const searchLower = searchQuery.trim().toLowerCase();
@@ -66,7 +66,7 @@ export default function NotesPage() {
             if (!matchSearch) return false;
 
             if (activeTab === 'en_cours') return evaluation.etat_notes === 'en_cours';
-            if (activeTab === 'validees') return isValidatedState(evaluation.etat_notes);
+            if (activeTab === 'soumises') return isSubmittedState(evaluation.etat_notes);
             return true;
         });
     }, [evaluations, searchQuery, activeTab]);
@@ -74,8 +74,8 @@ export default function NotesPage() {
     const counts = useMemo(() => {
         const all = evaluations.length;
         const enCours = evaluations.filter((e) => e.etat_notes === 'en_cours').length;
-        const validees = evaluations.filter((e) => isValidatedState(e.etat_notes)).length;
-        return { all, enCours, validees };
+        const soumises = evaluations.filter((e) => isSubmittedState(e.etat_notes)).length;
+        return { all, enCours, soumises };
     }, [evaluations]);
 
     const openNotesModal = async (evaluationId) => {
@@ -147,6 +147,21 @@ export default function NotesPage() {
             ),
         },
         {
+            key: 'eval-semestre',
+            label: 'SEMESTRE',
+            className: 'min-w-[140px] hidden lg:table-cell',
+            render: (_, row) => (
+                <div className="flex flex-col">
+                    <span className="text-sm text-gray-700 font-medium">
+                        {row.semestre?.numero ?? '—'}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                        {row.semestre?.annee ?? '—'}
+                    </span>
+                </div>
+            ),
+        },
+        {
             key: 'eval-notes',
             label: 'NOTES SAISIES',
             className: 'min-w-[170px] hidden sm:table-cell',
@@ -174,13 +189,13 @@ export default function NotesPage() {
             label: 'STATUT',
             className: 'min-w-[110px] hidden sm:table-cell',
             render: (_, row) => {
-                const isValidee = row.etat_notes === 'validee';
+                const isSoumise = row.etat_notes === 'soumise';
                 const isPartielle = row.etat_notes === 'partielle';
 
                 return (
                     <StatusBadge
-                        status={isValidee ? 'Validée' : isPartielle ? 'Partielle' : 'En cours'}
-                        variant={isValidee ? 'success' : isPartielle ? 'info' : 'warning'}
+                        status={isSoumise ? 'Soumise' : isPartielle ? 'Partielle' : 'En cours'}
+                        variant={isSoumise ? 'success' : isPartielle ? 'info' : 'warning'}
                     />
                 );
             },
@@ -213,7 +228,7 @@ export default function NotesPage() {
                     tabs={[
                         { id: 'all', label: 'Toutes', count: counts.all },
                         { id: 'en_cours', label: 'En cours', count: counts.enCours },
-                        { id: 'validees', label: 'Validées', count: counts.validees },
+                        { id: 'soumises', label: 'Soumises', count: counts.soumises },
                     ]}
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
@@ -226,7 +241,7 @@ export default function NotesPage() {
                 <div className="mt-4 mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex gap-3">
                     <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                     <p className="text-sm font-medium text-amber-900">
-                        Les notes validées ne sont plus modifiables par le professeur.
+                        Les notes soumises ne sont plus modifiables par le professeur.
                     </p>
                 </div>
 

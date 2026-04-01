@@ -36,7 +36,7 @@ export const filieresAPI = {
     create: (data) => apiClient.post('/admin/filieres', data),
     update: (id, data) => apiClient.put(`/admin/filieres/${id}`, data),
     delete: (id) => apiClient.delete(`/admin/filieres/${id}`),
-    createStandardLevels: (id) => apiClient.post(`/admin/filieres/${id}/create-standard-levels`),
+    createStandardLevels: (id, data) => apiClient.post(`/admin/filieres/${id}/create-standard-levels`, data),
 };
 
 // ============================================
@@ -121,9 +121,10 @@ export const evaluationsAPI = {
 // ADMIN - NOTES
 // ============================================
 export const notesAdminAPI = {
-    valider: (noteId) => apiClient.patch(`/admin/notes/${noteId}/valider`),
-    getEnAttente: (params) => apiClient.get('/admin/notes/en-attente', params),
-    validerMasse: (data) => apiClient.post('/admin/notes/valider-masse', data),
+    getSoumises: (params) => apiClient.get('/admin/notes/soumises', params),
+    reouvrirMasse: (data) => apiClient.post('/admin/notes/reouvrir', data),
+    exportStatus: (params) => apiClient.get('/admin/notes/exports/status', params),
+    exportExcel: (data) => apiClient.downloadPost('/admin/notes/export', data),
 };
 
 // ============================================

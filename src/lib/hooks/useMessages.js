@@ -123,7 +123,7 @@ export const useMessages = () => {
                 abortControllerRef.current.abort();
             }
         };
-    }, []); // Intentionnellement vide pour ne déclencher qu'une fois
+    }, [fetchMessages, fetchUnreadCount]);
 
     // Effet pour les changements de pagination/filtres (après l'initialisation)
     useEffect(() => {

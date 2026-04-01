@@ -3,15 +3,6 @@
 
 import { Bar, BarChart as RechartsBarChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const data = [
-  { name: 'Info', students: 500 },
-  { name: 'Gest', students: 600 },
-  { name: 'Droit', students: 400 },
-  { name: 'Arts', students: 300 },
-  { name: 'Sci', students: 450 },
-  { name: 'Eco', students: 200 },
-];
-
 export default function BarChart({ data = [] }) {
   return (
     // On utilise ResponsiveContainer pour que le graphique ne dépasse jamais

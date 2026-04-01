@@ -2,6 +2,7 @@
 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils/cn';
 
 /**
  * Composant Checkbox réutilisable avec label
@@ -16,7 +17,7 @@ export default function FormCheckbox({
   className = '',
 }) {
   return (
-    <div className="space-y-2">
+    <div className={cn('space-y-2', className)}>
       <div className="flex items-center gap-2">
         <Checkbox
           id={id}

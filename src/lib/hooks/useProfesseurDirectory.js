@@ -86,7 +86,7 @@ export const useProfesseurDirectory = () => {
                 abortControllerRef.current.abort();
             }
         };
-    }, []); // Intentionnellement vide pour ne déclencher qu'une fois
+    }, [fetchUsers]);
 
     // Effet pour les changements de pagination (après l'initialisation)
     useEffect(() => {

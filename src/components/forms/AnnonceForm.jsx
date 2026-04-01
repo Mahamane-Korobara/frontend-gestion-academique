@@ -42,23 +42,16 @@ export default function AnnonceForm() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filtrer les cours du professeur uniquement
-  const professorCours = isProfesseur 
-    ? cours.filter(c => c.professeur_id === user?.professeur?.id)
-    : cours;
-
-  // Extraire les filières et niveaux uniques des cours du professeur
-  const professorFilieres = isProfesseur
-    ? filieres.filter(f => professorCours.some(c => c.filiere_id === f.id))
-    : filieres;
-
-  const professorNiveaux = isProfesseur
-    ? niveaux.filter(n => professorCours.some(c => c.niveau_id === n.id))
-    : niveaux;
+  // Les options professeurs sont déjà filtrées côté backend (/professeur/form-options)
+  const professorCours = cours;
+  const professorFilieres = filieres;
+  const professorNiveaux = niveaux;
 
   // Options de type selon le rôle
   const typeOptions = isProfesseur
     ? [
+        { value: 'filiere', label: 'Par Filière' },
+        { value: 'niveau', label: 'Par Niveau' },
         { value: 'cours', label: 'Par Cours' }
       ]
     : [
@@ -249,7 +242,7 @@ export default function AnnonceForm() {
     }
   };
 
-  // Afficher un message si le professeur n'a pas de cours
+  // Afficher un message si le professeur n&apos;a pas de cours
   if (isProfesseur && professorCours.length === 0 && !optionsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -263,7 +256,7 @@ export default function AnnonceForm() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                Veuillez contacter l'administrateur pour qu'il vous assigne des cours.
+                Veuillez contacter l&apos;administrateur pour qu&apos;il vous assigne des cours.
               </p>
               <Link href={isProfesseur ? '/professeur/annonces' : '/annonces'}>
                 <Button>Retour aux annonces</Button>
@@ -310,8 +303,8 @@ export default function AnnonceForm() {
               Informations importantes
             </h3>
             <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-              <li>Vous pouvez créer des annonces uniquement pour vos cours</li>
-              <li>Types disponibles : Cours, Niveau, Filière</li>
+              <li>Vous pouvez créer des annonces pour vos filières, niveaux et cours</li>
+              <li>Types disponibles : Filière, Niveau, Cours</li>
               <li>Vous avez actuellement {professorCours.length} cours assigné(s)</li>
             </ul>
           </div>
@@ -328,7 +321,7 @@ export default function AnnonceForm() {
         {/* Formulaire */}
         <Card>
           <CardHeader>
-            <CardTitle>Détails de l'annonce</CardTitle>
+            <CardTitle>Détails de l&apos;annonce</CardTitle>
             <CardDescription>
               Remplissez les champs ci-dessous pour créer une nouvelle annonce
             </CardDescription>
@@ -341,7 +334,7 @@ export default function AnnonceForm() {
                 name="titre"
                 label="Titre"
                 type="text"
-                placeholder="Entrez le titre de l'annonce"
+                placeholder="Entrez le titre de l&apos;annonce"
                 value={formData.titre}
                 onChange={handleChange}
                 error={errors.titre}
@@ -358,7 +351,7 @@ export default function AnnonceForm() {
                 id="contenu"
                 name="contenu"
                 label="Contenu"
-                placeholder="Entrez le contenu détaillé de l'annonce"
+                placeholder="Entrez le contenu détaillé de l&apos;annonce"
                 value={formData.contenu}
                 onChange={handleChange}
                 error={errors.contenu}
@@ -372,7 +365,7 @@ export default function AnnonceForm() {
                 {/* Type */}
                 <FormSelect
                   id="type"
-                  label="Type d'annonce"
+                  label="Type d&apos;annonce"
                   value={formData.type}
                   onValueChange={handleTypeChange}
                   options={typeOptions}
@@ -450,7 +443,7 @@ export default function AnnonceForm() {
               <FormInput
                 id="date_expiration"
                 name="date_expiration"
-                label="Date d'expiration (optionnel)"
+                label="Date d&apos;expiration (optionnel)"
                 type="date"
                 value={formData.date_expiration}
                 onChange={handleChange}

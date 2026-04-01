@@ -59,7 +59,7 @@ export default function DocumentViewModal({ document }) {
             <p className="font-medium text-gray-900">{document.taille}</p>
           </div>
           <div>
-            <span className="text-gray-500">Date d'ajout:</span>
+            <span className="text-gray-500">Date d&apos;ajout:</span>
             <p className="font-medium text-gray-900">{document.created_at}</p>
           </div>
           <div>

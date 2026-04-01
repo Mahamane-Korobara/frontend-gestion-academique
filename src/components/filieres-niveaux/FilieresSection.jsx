@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 
 import InfoBadge from '@/components/ui/InfoBadge';

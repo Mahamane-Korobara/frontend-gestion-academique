@@ -36,6 +36,7 @@ export default function AffectationForm({
         if (!cours) return;
         const profActuel = cours.professeurs?.[0];
         if (profActuel?.id) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setProfesseurId(String(profActuel.id));
         }
     }, [cours]);

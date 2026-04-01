@@ -55,14 +55,10 @@ export const ALERT_ICONS = {
 
 /**
  * TYPES_EVALUATIONS — correspond exactement au TypeEvaluationSeeder
- * value = id en base (ordre d'insertion : 1=CC, 2=EF, 3=TP, 4=PROJ, 5=RATT)
+ * value = id en base (EF uniquement)
  */
 export const TYPES_EVALUATIONS = [
-    { value: '1', label: 'Contrôle Continu', code: 'CC', coefficient_defaut: 0.40 },
-    { value: '2', label: 'Examen Final', code: 'EF', coefficient_defaut: 0.60 },
-    { value: '3', label: 'Travaux Pratiques', code: 'TP', coefficient_defaut: 0.30 },
-    { value: '4', label: 'Projet', code: 'PROJ', coefficient_defaut: 0.40 },
-    { value: '5', label: 'Rattrapage', code: 'RATT', coefficient_defaut: 1.00 },
+    { value: '2', label: 'Examen', code: 'EF', coefficient_defaut: 1.0 },
 ];
 
 export const STATUT_OPTIONS = [

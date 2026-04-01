@@ -39,6 +39,7 @@ export default function NiveauForm({
   // Pré-remplissage en mode édition
   useEffect(() => {
     if (!niveau) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFormData({
       filiere_id:       niveau.filiere?.id ? String(niveau.filiere.id) : '',
       nom:              niveau.nom              || '',

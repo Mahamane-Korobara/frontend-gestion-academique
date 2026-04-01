@@ -33,5 +33,5 @@ export const filieresService = {
     /**
      * Créer les niveaux standards pour une filière (L1, L2, L3)
      */
-    createStandardLevels: (id) => filieresAPI.createStandardLevels(id),
+    createStandardLevels: (id, data) => filieresAPI.createStandardLevels(id, data),
 };

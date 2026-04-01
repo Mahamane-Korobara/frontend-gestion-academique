@@ -35,7 +35,7 @@ export default function CreneauForm({
 
     const [errors, setErrors]             = useState({});
     const [allCours, setAllCours]         = useState([]);
-    const [loadingCours, setLoadingCours] = useState(false);
+    const [loadingCours, setLoadingCours] = useState(true);
     const [coursError, setCoursError]     = useState(null);
     const [coursInfo, setCoursInfo]       = useState(null);
 
@@ -43,9 +43,6 @@ export default function CreneauForm({
 
     useEffect(() => {
         let cancelled = false;
-        setLoadingCours(true);
-        setCoursError(null);
-
         coursAPI.getAll({ is_active: 1 })
             .then(res => {
                 if (!cancelled) setAllCours(res?.data || res || []);
@@ -172,7 +169,7 @@ export default function CreneauForm({
                     Informations associées
                     {!hasCoursSelected && (
                         <span className="ml-2 text-gray-300 normal-case font-normal tracking-normal">
-                            — sélectionnez un cours d'abord
+                            — sélectionnez un cours d&apos;abord
                         </span>
                     )}
                 </p>

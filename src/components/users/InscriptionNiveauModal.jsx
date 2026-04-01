@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Loader2, AlertCircle, BookOpen, GraduationCap } from 'lucide-react';
 import {
     Dialog,
@@ -28,14 +28,13 @@ export default function InscriptionNiveauModal({
     const [niveauxOptions, setNiveauxOptions] = useState([]);
     const [errors, setErrors]                 = useState({});
 
-    useEffect(() => {
-        if (!isOpen) {
-            setFiliereId('');
-            setNiveauId('');
-            setNiveauxOptions([]);
-            setErrors({});
-        }
-    }, [isOpen]);
+    const handleClose = useCallback(() => {
+        setFiliereId('');
+        setNiveauId('');
+        setNiveauxOptions([]);
+        setErrors({});
+        onClose?.();
+    }, [onClose]);
 
     const handleFiliereChange = useCallback((value) => {
         setFiliereId(value);
@@ -65,11 +64,11 @@ export default function InscriptionNiveauModal({
             filiere_id: Number(filiereId),
             niveau_id:  Number(niveauId),
         });
-        if (result?.success) onClose();
+        if (result?.success) handleClose();
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
+        <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogOverlay className="backdrop-blur-sm" />
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
@@ -116,18 +115,18 @@ export default function InscriptionNiveauModal({
                     {niveauId && (
                         <p className="flex items-center gap-1.5 text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2">
                             <BookOpen className="w-3.5 h-3.5 shrink-0" />
-                            L'étudiant sera inscrit à tous les cours de ce niveau pour l'année et le semestre actifs.
+                            L&apos;étudiant sera inscrit à tous les cours de ce niveau pour l&apos;année et le semestre actifs.
                         </p>
                     )}
 
                     <div className="flex gap-3 justify-end pt-4">
-                        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+                        <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
                             Annuler
                         </Button>
                         <Button type="submit" disabled={isSubmitting || !filiereId || !niveauId}>
                             {isSubmitting
                                 ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Inscription...</>
-                                : "Inscrire l'étudiant"
+                                : "Inscrire l&apos;étudiant"
                             }
                         </Button>
                     </div>

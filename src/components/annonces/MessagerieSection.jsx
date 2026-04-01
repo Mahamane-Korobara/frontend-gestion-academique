@@ -47,11 +47,13 @@ export default function MessagerieSection() {
   } = useMessages();
   const { user } = useAuth();
   
-  // Utiliser le hook approprié selon le rôle
+  // Utiliser le hook approprié selon le rôle (hooks toujours appelés)
   const isProfesseur = user?.role?.name === 'professeur';
-  const { users, loading: usersLoading, error: usersError } = isProfesseur 
-    ? useProfesseurDirectory()
-    : useUsers();
+  const professeurDirectory = useProfesseurDirectory();
+  const usersDirectory = useUsers();
+  const { users, loading: usersLoading, error: usersError } = isProfesseur
+    ? professeurDirectory
+    : usersDirectory;
   
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);

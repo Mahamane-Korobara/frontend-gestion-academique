@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import notesAdminService from '@/lib/services/notesAdmin.service';
 
 export default function useNotesAdmin(initialFilters = {}) {
@@ -14,6 +14,9 @@ export default function useNotesAdmin(initialFilters = {}) {
     const [filters, setFilters] = useState({
         cours_id: null,
         etudiant_id: null,
+        semestre_id: null,
+        filiere_id: null,
+        niveau_id: null,
         per_page: 500,
         ...initialFilters,
     });
@@ -26,7 +29,7 @@ export default function useNotesAdmin(initialFilters = {}) {
         setError(null);
 
         try {
-            const response = await notesAdminService.getEnAttente(filters);
+            const response = await notesAdminService.getSoumises(filters);
             if (!abortRef.current?.signal.aborted) {
                 setNotes(response?.data || []);
                 setMeta(response?.meta || {});
@@ -68,33 +71,28 @@ export default function useNotesAdmin(initialFilters = {}) {
             ...prev,
             cours_id: null,
             etudiant_id: null,
+            semestre_id: null,
+            filiere_id: null,
+            niveau_id: null,
         }));
     }, []);
 
-    const validerNote = useCallback(
-        async (noteId) => {
-            const response = await notesAdminService.valider(noteId);
-            await refetch();
-            return response;
-        },
-        [refetch]
-    );
-
-    const validerMasse = useCallback(
+    const reouvrirMasse = useCallback(
         async (noteIds) => {
-            const response = await notesAdminService.validerMasse(noteIds);
+            const response = await notesAdminService.reouvrirMasse(noteIds);
             await refetch();
             return response;
         },
         [refetch]
     );
 
-    const counts = useMemo(() => {
-        const total = notes.length;
-        const soumises = notes.filter((n) => n?.statut === 'soumise').length;
-        const brouillons = notes.filter((n) => n?.statut === 'brouillon').length;
-        return { total, soumises, brouillons };
-    }, [notes]);
+    const exportStatus = useCallback(async (params) => {
+        return notesAdminService.exportStatus(params);
+    }, []);
+
+    const exportExcel = useCallback(async (payload) => {
+        return notesAdminService.exportExcel(payload);
+    }, []);
 
     return {
         notes,
@@ -102,11 +100,11 @@ export default function useNotesAdmin(initialFilters = {}) {
         error,
         meta,
         filters,
-        counts,
         refetch,
         updateFilter,
         resetServerFilters,
-        validerNote,
-        validerMasse,
+        reouvrirMasse,
+        exportStatus,
+        exportExcel,
     };
 }

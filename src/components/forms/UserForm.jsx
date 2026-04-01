@@ -54,31 +54,56 @@ export default function UserForm({
 
   useEffect(() => {
     if (!user) return;
-    const et = user.etudiant || {};
-    const pr = user.professeur || {};
-    const role = user.role?.name || 'etudiant';
+
+    const role = user.role?.name || user.profile?.type || 'etudiant';
+    const profile = user.profile || {};
+
+    // Supporte les deux structures possibles : user.etudiant / user.professeur OU user.profile
+    const et = user.etudiant || (profile.type === 'etudiant' ? profile : {});
+    const pr = user.professeur || (profile.type === 'professeur' ? profile : {});
+
+    const filiereIdFromProfile = (() => {
+      if (et.filiere_id) return String(et.filiere_id);
+      const code = et.filiere || profile.filiere;
+      if (!code) return '';
+      const match = (filieres || []).find(
+        (f) => String(f.code || '').toLowerCase() === String(code).toLowerCase()
+      );
+      return match ? String(match.id ?? match.value) : '';
+    })();
+
+    const niveauIdFromProfile = (() => {
+      if (et.niveau_id) return String(et.niveau_id);
+      const nom = et.niveau || profile.niveau;
+      if (!nom) return '';
+      const match = (niveauxOptions || []).find(
+        (n) => String(n.label || '').toLowerCase() === String(nom).toLowerCase()
+      );
+      return match ? String(match.id ?? match.value) : '';
+    })();
+
     setFormData({
       email: user.email || '',
       role,
-      nom: role === 'etudiant' ? et.nom || '' : pr.nom || '',
-      prenom: role === 'etudiant' ? et.prenom || '' : pr.prenom || '',
+      nom: role === 'etudiant' ? (et.nom || '') : (pr.nom || ''),
+      prenom: role === 'etudiant' ? (et.prenom || '') : (pr.prenom || ''),
       matricule: et.matricule || '',
       date_naissance: et.date_naissance || '',
       sexe: et.sexe || '',
-      filiere_id: et.filiere_id ? String(et.filiere_id) : '',
-      niveau_id: et.niveau_id ? String(et.niveau_id) : '',
+      filiere_id: filiereIdFromProfile,
+      niveau_id: niveauIdFromProfile,
       lieu_naissance: et.lieu_naissance || '',
       adresse: et.adresse || '',
       email_personnel: et.email_personnel || '',
       telephone_etudiant: et.telephone || '',
       telephone_urgence: et.telephone_urgence || '',
       telephone_professeur: pr.telephone || user.phone || '',
-      code_professeur: pr.code_professeur || '',
+      code_professeur: pr.code_professeur || pr.code || '',
       specialite: pr.specialite || '',
       grade: pr.grade || '',
       bio: pr.bio || '',
     });
-  }, [user]);
+  }, [user, filieres, niveauxOptions]);
 
   const filteredNiveaux = useMemo(() => {
     if (!formData.filiere_id) return niveauxOptions;

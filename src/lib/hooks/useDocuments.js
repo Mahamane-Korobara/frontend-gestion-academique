@@ -116,7 +116,7 @@ export default function useDocuments() {
         if (initialFetchDone.current) {
             fetchDocuments();
         }
-    }, [pagination.currentPage, pagination.perPage, filters]);
+    }, [pagination.currentPage, pagination.perPage, filters, fetchDocuments]);
 
     // ============ MÉTHODES DE MUTATION ============
 

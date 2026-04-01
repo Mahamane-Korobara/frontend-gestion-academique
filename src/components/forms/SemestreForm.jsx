@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button }   from '@/components/ui/button';
 import FormInput    from '@/components/forms/FormInput';
@@ -44,12 +44,7 @@ export default function SemestreForm({
         is_active:            semestre?.is_active ?? false,
     });
     const [errors, setErrors] = useState({});
-
-    useEffect(() => {
-        if (serverErrors && Object.keys(serverErrors).length > 0) {
-            setErrors(prev => ({ ...prev, ...serverErrors }));
-        }
-    }, [serverErrors]);
+    const allErrors = { ...errors, ...serverErrors };
 
     const set = (key, value) => {
         setForm(p => ({ ...p, [key]: value }));
@@ -98,7 +93,7 @@ export default function SemestreForm({
                 onValueChange={v => set('annee_academique_id', v)}
                 options={anneesOptions}
                 placeholder="Choisir une année"
-                error={errors.annee_academique_id}
+                error={allErrors.annee_academique_id}
                 disabled={loading || !!anneeIdFixed || isEdit}
                 required
             />
@@ -110,7 +105,7 @@ export default function SemestreForm({
                 onValueChange={v => set('numero', v)}
                 options={SEMESTRE_OPTIONS}
                 placeholder="S1 ou S2"
-                error={errors.numero}
+                error={allErrors.numero}
                 disabled={loading || isEdit}
                 required
             />
@@ -123,13 +118,13 @@ export default function SemestreForm({
                         id="date_debut" label="Début"
                         type="date" value={form.date_debut}
                         onChange={e => set('date_debut', e.target.value)}
-                        error={errors.date_debut} disabled={loading} required
+                        error={allErrors.date_debut} disabled={loading} required
                     />
                     <FormInput
                         id="date_fin" label="Fin"
                         type="date" value={form.date_fin}
                         onChange={e => set('date_fin', e.target.value)}
-                        error={errors.date_fin} disabled={loading} required
+                        error={allErrors.date_fin} disabled={loading} required
                     />
                 </div>
             </div>
@@ -142,13 +137,13 @@ export default function SemestreForm({
                         id="date_debut_examens" label="Début examens"
                         type="date" value={form.date_debut_examens}
                         onChange={e => set('date_debut_examens', e.target.value)}
-                        error={errors.date_debut_examens} disabled={loading} required
+                        error={allErrors.date_debut_examens} disabled={loading} required
                     />
                     <FormInput
                         id="date_fin_examens" label="Fin examens"
                         type="date" value={form.date_fin_examens}
                         onChange={e => set('date_fin_examens', e.target.value)}
-                        error={errors.date_fin_examens} disabled={loading} required
+                        error={allErrors.date_fin_examens} disabled={loading} required
                     />
                 </div>
             </div>

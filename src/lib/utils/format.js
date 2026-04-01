@@ -44,7 +44,7 @@ export function formatTime(time) {
         }
 
         return formatDate(time, 'HH:mm');
-    } catch (error) {
+    } catch {
         return time;
     }
 }
@@ -161,7 +161,7 @@ export function formatAnneeAcademique(dateDebut, dateFin) {
         const anneeDebut = new Date(dateDebut).getFullYear();
         const anneeFin = new Date(dateFin).getFullYear();
         return `${anneeDebut}-${anneeFin}`;
-    } catch (error) {
+    } catch {
         return '-';
     }
 }

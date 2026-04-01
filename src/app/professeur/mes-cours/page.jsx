@@ -1,10 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Link from 'next/link';
-
 // UI & Layout
-import { Button } from '@/components/ui/button';
 import ListPageLayout from '@/components/partage/ListPageLayout';
 import ListPageFilters from '@/components/partage/ListPageFilters';
 import InfoBadge from '@/components/ui/InfoBadge';

@@ -15,15 +15,9 @@ import InfoBadge              from '@/components/ui/InfoBadge';
 import useEvaluations from '@/lib/hooks/useEvaluations';
 import useCours       from '@/lib/hooks/useCours';
 import EvaluationForm from '@/components/forms/EvaluationForm';
+import { TYPES_EVALUATIONS } from '@/lib/utils/constants';
 
 // Constantes
-const TYPES_EVALUATIONS = [
-    { value: '1', label: 'Contrôle Continu',  coefficient_defaut: 0.40 },
-    { value: '2', label: 'Examen Final',       coefficient_defaut: 0.60 },
-    { value: '3', label: 'Travaux Pratiques',  coefficient_defaut: 0.30 },
-    { value: '4', label: 'Projet',             coefficient_defaut: 0.40 },
-    { value: '5', label: 'Rattrapage',         coefficient_defaut: 1.00 },
-];
 
 const STATUT_CONFIG = {
     planifiee: { label: 'Planifiée', bg: 'bg-blue-50',   text: 'text-blue-600'   },

@@ -216,6 +216,34 @@ class ApiClient {
 
         return response.blob();
     }
+
+    /**
+     * DOWNLOAD (POST)
+     * Retourne un Blob (pour ZIP, Excel, etc.)
+     */
+    async downloadPost(endpoint, body = {}) {
+        const response = await fetch(`${this.baseURL}${endpoint}`, {
+            method: 'POST',
+            headers: this.getHeaders(false),
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const error = new Error(errorData.message || 'Erreur lors du téléchargement');
+            error.status = response.status;
+            error.errors = errorData?.errors || null;
+            error.data = errorData;
+
+            if (response.status === 401) {
+                this.handleUnauthorized();
+            }
+
+            throw error;
+        }
+
+        return response.blob();
+    }
 }
 
 const apiClient = new ApiClient();

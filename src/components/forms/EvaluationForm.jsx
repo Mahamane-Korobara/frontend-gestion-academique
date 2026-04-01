@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Loader2, Info } from 'lucide-react';
 import { Button }     from '@/components/ui/button';
 import FormInput      from '@/components/forms/FormInput';
@@ -35,10 +35,13 @@ export default function EvaluationForm({
     serverErrors     = {},
 }) {
     const isEdit = !!evaluation;
+    const defaultTypeId = TYPES_EVALUATIONS[0]?.value ?? '';
 
     const [form, setForm] = useState({
         cours_id:           evaluation?.cours?.id           ? String(evaluation.cours.id)           : '',
-        type_evaluation_id: evaluation?.type_evaluation?.id ? String(evaluation.type_evaluation.id) : '',
+        type_evaluation_id: evaluation?.type_evaluation?.id
+            ? String(evaluation.type_evaluation.id)
+            : defaultTypeId,
         semestre_id:        evaluation?.semestre?.id        ? String(evaluation.semestre.id)        : '',
         titre:              evaluation?.titre               ?? '',
         coefficient:        evaluation?.coefficient         ?? '',
@@ -53,59 +56,55 @@ export default function EvaluationForm({
     const [coefTouched, setCoefTouched] = useState(isEdit);
 
     const [errors, setErrors] = useState({});
+    const allErrors = { ...errors, ...serverErrors };
 
-    useEffect(() => {
-        if (serverErrors && Object.keys(serverErrors).length > 0)
-            setErrors(p => ({ ...p, ...serverErrors }));
-    }, [serverErrors]);
-
-    const set = (key, value) => {
+    const setField = useCallback((key, value) => {
         setForm(p => ({ ...p, [key]: value }));
         setErrors(p => ({ ...p, [key]: undefined }));
-    };
+    }, []);
 
     // Titre auto : "Type - Cours"
-    const buildTitre = (typeId, coursId) => {
+    const buildTitre = useCallback((typeId, coursId) => {
         const typeLabel  = TYPES_EVALUATIONS.find(t => t.value === typeId)?.label ?? '';
         const coursLabel = coursOptions.find(c => String(c.value) === String(coursId))?.label ?? '';
         if (!typeLabel || !coursLabel) return '';
         // Label cours est "CODE — Titre", on prend juste le titre
         const coursShort = coursLabel.includes('—') ? coursLabel.split('—')[1]?.trim() : coursLabel;
         return `${typeLabel} - ${coursShort}`;
-    };
+    }, [coursOptions]);
 
     //  Sélection du type 
     const handleTypeChange = useCallback((typeId) => {
-        set('type_evaluation_id', typeId);
+        setField('type_evaluation_id', typeId);
 
         // Auto-remplissage coefficient (seulement si pas encore touché manuellement)
         if (!coefTouched) {
             const type = TYPES_EVALUATIONS.find(t => t.value === typeId);
-            if (type) set('coefficient', type.coefficient_defaut);
+            if (type) setField('coefficient', type.coefficient_defaut);
         }
 
         // Titre auto
         const titre = buildTitre(typeId, form.cours_id);
-        if (titre) set('titre', titre);
-    }, [coefTouched, form.cours_id, coursOptions]);
+        if (titre) setField('titre', titre);
+    }, [buildTitre, coefTouched, form.cours_id, setField]);
 
     //  Sélection du cours 
     const handleCoursChange = useCallback((coursId) => {
-        set('cours_id', coursId);
+        setField('cours_id', coursId);
         const cours = coursOptions.find(c => String(c.value) === String(coursId));
 
         // Auto-remplissage semestre
-        if (cours?.semestre_id) set('semestre_id', String(cours.semestre_id));
+        if (cours?.semestre_id) setField('semestre_id', String(cours.semestre_id));
 
         // Titre auto
         const titre = buildTitre(form.type_evaluation_id, coursId);
-        if (titre) set('titre', titre);
-    }, [form.type_evaluation_id, coursOptions]);
+        if (titre) setField('titre', titre);
+    }, [buildTitre, coursOptions, form.type_evaluation_id, setField]);
 
     //  Coefficient modifié manuellement 
     const handleCoefChange = (e) => {
         setCoefTouched(true);
-        set('coefficient', e.target.value);
+        setField('coefficient', e.target.value);
     };
 
     //  Validation
@@ -156,7 +155,7 @@ export default function EvaluationForm({
                     onValueChange={handleCoursChange}
                     options={coursOptions}
                     placeholder="Choisir un cours"
-                    error={errors.cours_id}
+                    error={allErrors.cours_id}
                     disabled={loading || isEdit}
                     required
                 />
@@ -166,8 +165,8 @@ export default function EvaluationForm({
                     onValueChange={handleTypeChange}
                     options={TYPES_EVALUATIONS}
                     placeholder="Choisir un type"
-                    error={errors.type_evaluation_id}
-                    disabled={loading}
+                    error={allErrors.type_evaluation_id}
+                    disabled={loading || TYPES_EVALUATIONS.length === 1}
                     required
                 />
             </div>
@@ -176,10 +175,10 @@ export default function EvaluationForm({
             <FormSelect
                 id="semestre_id" label="Semestre"
                 value={form.semestre_id}
-                onValueChange={v => set('semestre_id', v)}
+                onValueChange={v => setField('semestre_id', v)}
                 options={semestresOptions}
                 placeholder="Choisir un semestre"
-                error={errors.semestre_id}
+                error={allErrors.semestre_id}
                 disabled={loading}
                 required
             />
@@ -187,10 +186,10 @@ export default function EvaluationForm({
             {/* Titre — auto-généré, modifiable */}
             <FormInput
                 id="titre" label="Titre"
-                placeholder="ex: Contrôle Continu - Algorithmique"
+                placeholder="ex: Examen - Algorithmique"
                 value={form.titre}
-                onChange={e => set('titre', e.target.value)}
-                error={errors.titre}
+                onChange={e => setField('titre', e.target.value)}
+                error={allErrors.titre}
                 disabled={loading}
                 required
             />
@@ -204,7 +203,7 @@ export default function EvaluationForm({
                         placeholder="ex: 0.40"
                         value={form.coefficient}
                         onChange={handleCoefChange}
-                        error={errors.coefficient}
+                        error={allErrors.coefficient}
                         disabled={loading}
                         required
                     />
@@ -220,8 +219,8 @@ export default function EvaluationForm({
                     id="date_evaluation" label="Date de l'évaluation"
                     type="date"
                     value={form.date_evaluation}
-                    onChange={e => set('date_evaluation', e.target.value)}
-                    error={errors.date_evaluation}
+                    onChange={e => setField('date_evaluation', e.target.value)}
+                    error={allErrors.date_evaluation}
                     disabled={loading}
                     required
                 />
@@ -236,14 +235,14 @@ export default function EvaluationForm({
                     <FormInput
                         id="heure_debut" label="Heure début"
                         type="time" value={form.heure_debut}
-                        onChange={e => set('heure_debut', e.target.value)}
-                        error={errors.heure_debut} disabled={loading}
+                        onChange={e => setField('heure_debut', e.target.value)}
+                        error={allErrors.heure_debut} disabled={loading}
                     />
                     <FormInput
                         id="heure_fin" label="Heure fin"
                         type="time" value={form.heure_fin}
-                        onChange={e => set('heure_fin', e.target.value)}
-                        error={errors.heure_fin} disabled={loading}
+                        onChange={e => setField('heure_fin', e.target.value)}
+                        error={allErrors.heure_fin} disabled={loading}
                     />
                 </div>
             </div>
@@ -253,7 +252,7 @@ export default function EvaluationForm({
                 <FormSelect
                     id="statut" label="Statut"
                     value={form.statut}
-                    onValueChange={v => set('statut', v)}
+                    onValueChange={v => setField('statut', v)}
                     options={STATUT_OPTIONS}
                     disabled={loading}
                 />
@@ -264,7 +263,7 @@ export default function EvaluationForm({
                 id="instructions" label="Instructions"
                 placeholder="Calculatrices non autorisées. Justifier tous les raisonnements."
                 value={form.instructions}
-                onChange={e => set('instructions', e.target.value)}
+                onChange={e => setField('instructions', e.target.value)}
                 disabled={loading}
                 rows={3}
             />

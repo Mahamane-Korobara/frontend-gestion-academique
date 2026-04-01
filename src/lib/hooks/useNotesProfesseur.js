@@ -4,17 +4,75 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import notesProfesseurService from '@/lib/services/notesProfesseur.service';
 import useEvaluationsProfesseur from '@/lib/hooks/useEvaluationsProfesseur';
+import { TYPES_EVALUATIONS } from '@/lib/utils/constants';
+
+const EXAM_TYPE_ID = TYPES_EVALUATIONS[0]?.value;
 
 function normalizeEvaluations(evaluations = []) {
-    return (evaluations || []).map((ev) => {
+    const filtered = EXAM_TYPE_ID
+        ? (evaluations || []).filter(
+            (ev) => String(ev?.type_evaluation?.id) === String(EXAM_TYPE_ID)
+        )
+        : (evaluations || []);
+
+    const chooseBest = (current, candidate) => {
+        if (!current) return candidate;
+
+        const currSoumises = Number(
+            current?.nb_notes_soumises ?? current?.nb_notes_validees ?? 0
+        );
+        const candSoumises = Number(
+            candidate?.nb_notes_soumises ?? candidate?.nb_notes_validees ?? 0
+        );
+
+        if (candSoumises !== currSoumises) {
+            return candSoumises > currSoumises ? candidate : current;
+        }
+
+        const currSaisies = Number(current?.nb_notes_saisies ?? 0);
+        const candSaisies = Number(candidate?.nb_notes_saisies ?? 0);
+        if (candSaisies !== currSaisies) {
+            return candSaisies > currSaisies ? candidate : current;
+        }
+
+        const currDate = current?.date_evaluation
+            ? new Date(current.date_evaluation).getTime()
+            : 0;
+        const candDate = candidate?.date_evaluation
+            ? new Date(candidate.date_evaluation).getTime()
+            : 0;
+        if (candDate !== currDate) {
+            return candDate > currDate ? candidate : current;
+        }
+
+        const currId = Number(current?.id ?? 0);
+        const candId = Number(candidate?.id ?? 0);
+        return candId > currId ? candidate : current;
+    };
+
+    const dedupedMap = new Map();
+    filtered.forEach((ev) => {
+        const coursId = ev?.cours?.id ?? ev?.cours_id ?? 'na';
+        const semestreId = ev?.semestre?.id ?? ev?.semestre_id ?? 'na';
+        const typeId = ev?.type_evaluation?.id ?? ev?.type_evaluation_id ?? 'na';
+        const key = `${coursId}|${semestreId}|${typeId}`;
+
+        const current = dedupedMap.get(key);
+        dedupedMap.set(key, chooseBest(current, ev));
+    });
+
+    return Array.from(dedupedMap.values()).map((ev) => {
         const nbNotesTotales = Number(ev?.nb_notes_totales ?? 0);
         const nbNotesSaisies = Number(ev?.nb_notes_saisies ?? 0);
-        const nbNotesValidees = Number(ev?.nb_notes_validees ?? 0);
+        const nbNotesSoumises = Number(
+            ev?.nb_notes_soumises ?? ev?.nb_notes_validees ?? 0
+        );
+        const typeLabel = TYPES_EVALUATIONS[0]?.label ?? ev?.type_evaluation?.nom ?? 'N/A';
 
         let etatNotes = ev?.etat_notes || 'en_cours';
-        if (nbNotesTotales > 0 && nbNotesValidees >= nbNotesTotales) {
-            etatNotes = 'validee';
-        } else if (nbNotesValidees > 0) {
+        if (nbNotesTotales > 0 && nbNotesSoumises >= nbNotesTotales) {
+            etatNotes = 'soumise';
+        } else if (nbNotesSoumises > 0) {
             etatNotes = 'partielle';
         } else {
             etatNotes = 'en_cours';
@@ -22,14 +80,14 @@ function normalizeEvaluations(evaluations = []) {
 
         return {
             id: ev?.id,
-            libelle: ev?.titre || 'Évaluation',
-            type: ev?.type_evaluation?.nom || 'N/A',
+            libelle: typeLabel,
+            type: typeLabel,
             cours: ev?.cours || null,
             semestre: ev?.semestre || null,
             date_evaluation: ev?.date_evaluation || null,
             nb_notes_saisies: nbNotesSaisies,
             nb_notes_totales: nbNotesTotales,
-            nb_notes_validees: nbNotesValidees,
+            nb_notes_soumises: nbNotesSoumises,
             etat_notes: etatNotes,
         };
     });

@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { CheckCheck, CheckCircle2, ClipboardCheck, PencilLine, UserRound } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ClipboardCheck, Download, PencilLine, RotateCcw, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 
 import ListPageLayout from '@/components/partage/ListPageLayout';
@@ -11,15 +11,15 @@ import ActionsMenu from '@/components/partage/ActionsMenu';
 import InfoBadge from '@/components/ui/InfoBadge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { useModalOperations } from '@/lib/hooks/useModalOperations';
-
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import useNotesAdmin from '@/lib/hooks/useNotesAdmin';
 import useCours from '@/lib/hooks/useCours';
+import useSemestres from '@/lib/hooks/useSemestres';
+import useFilieres from '@/lib/hooks/useFilieres';
+import useNiveaux from '@/lib/hooks/useNiveaux';
 
 const STATUS_CONFIG = {
-    brouillon: { label: 'Brouillon', variant: 'gray' },
     soumise: { label: 'Soumise', variant: 'orange' },
-    validee: { label: 'Validée', variant: 'green' },
 };
 
 function formatDateTime(value) {
@@ -44,12 +44,12 @@ function StatusBadge({ statut }) {
     return <InfoBadge label={config.label} variant={config.variant} />;
 }
 
-function NoteActionsMenu({ note, onValider }) {
+function NoteActionsMenu({ note, onReouvrir }) {
     const actions = [
         {
-            icon: CheckCircle2,
-            label: 'Valider la note',
-            onClick: () => onValider?.(note),
+            icon: RotateCcw,
+            label: 'Réouvrir la note',
+            onClick: () => onReouvrir?.(note),
         },
     ];
 
@@ -57,24 +57,27 @@ function NoteActionsMenu({ note, onValider }) {
 }
 
 export default function NotesValidationPage() {
-    const [activeTab, setActiveTab] = useState('toutes');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedIds, setSelectedIds] = useState([]);
+    const [reopenConfirm, setReopenConfirm] = useState({ open: false, noteIds: [] });
+    const [reopenLoading, setReopenLoading] = useState(false);
 
     const {
         notes,
         loading,
         error,
         filters,
-        counts,
         updateFilter,
         resetServerFilters,
-        validerNote,
-        validerMasse,
+        reouvrirMasse,
+        exportStatus,
+        exportExcel,
     } = useNotesAdmin({ per_page: 500 });
 
     const { cours } = useCours({ per_page: 300 });
-    const { isSubmitting, handleSimpleOperation } = useModalOperations();
+    const { semestresOptions, semestreActif } = useSemestres();
+    const { activeFilieresOptions } = useFilieres();
+    const { niveauxOptions, getNiveauxByFiliere } = useNiveaux();
 
     const coursOptions = useMemo(
         () =>
@@ -89,8 +92,6 @@ export default function NotesValidationPage() {
         const query = searchQuery.trim().toLowerCase();
 
         return (notes || []).filter((note) => {
-            if (activeTab !== 'toutes' && note?.statut !== activeTab) return false;
-
             if (!query) return true;
 
             const fields = [
@@ -106,7 +107,7 @@ export default function NotesValidationPage() {
 
             return fields.some((value) => value.includes(query));
         });
-    }, [activeTab, notes, searchQuery]);
+    }, [notes, searchQuery]);
 
     const allVisibleIds = useMemo(() => filteredNotes.map((n) => n.id), [filteredNotes]);
     const allVisibleSelected =
@@ -127,64 +128,117 @@ export default function NotesValidationPage() {
         });
     };
 
-    const handleTabChange = (tabId) => {
-        setActiveTab(tabId);
-        setSelectedIds([]);
-    };
-
     const handleSearchChange = (value) => {
         setSearchQuery(value);
         setSelectedIds([]);
     };
 
+    useEffect(() => {
+        if (!filters.semestre_id && semestreActif?.id) {
+            updateFilter('semestre_id', String(semestreActif.id));
+        }
+    }, [filters.semestre_id, semestreActif?.id, updateFilter]);
+
     const resetFilters = () => {
         setSearchQuery('');
-        setActiveTab('toutes');
         setSelectedIds([]);
         resetServerFilters();
-    };
-
-    const handleFilterChange = (key, value) => {
-        if (key === 'cours_id') {
-            updateFilter('cours_id', value || null);
-            setSelectedIds([]);
+        if (semestreActif?.id) {
+            updateFilter('semestre_id', String(semestreActif.id));
         }
     };
 
-    const handleValiderUneNote = async (note) => {
-        if (!note?.id || isSubmitting) return;
-
-        await handleSimpleOperation(
-            () => validerNote(note.id),
-            'Note validée avec succès',
-            'Erreur lors de la validation de la note'
-        );
-        setSelectedIds((prev) => prev.filter((id) => id !== note.id));
+    const handleFilterChange = (key, value) => {
+        if (key === 'filiere_id') {
+            updateFilter('filiere_id', value || null);
+            updateFilter('niveau_id', null);
+        } else {
+            updateFilter(key, value || null);
+        }
+        setSelectedIds([]);
     };
 
-    const handleValiderMasse = async () => {
-        if (selectedIds.length === 0) {
+    const closeReopenConfirm = () => {
+        if (reopenLoading) return;
+        setReopenConfirm({ open: false, noteIds: [] });
+    };
+
+    const executeReopen = async (noteIds = []) => {
+        if (!noteIds.length) return;
+
+        setReopenLoading(true);
+        try {
+            const response = await reouvrirMasse(noteIds);
+            if (response?.exports_invalidated) {
+                toast.success('Notes réouvertes. Les exports précédents sont désormais obsolètes.');
+            } else {
+                toast.success('Notes réouvertes avec succès');
+            }
+            setSelectedIds((prev) => prev.filter((id) => !noteIds.includes(id)));
+        } catch (err) {
+            toast.error(err?.message || 'Erreur lors de la réouverture des notes');
+        } finally {
+            setReopenLoading(false);
+        }
+    };
+
+    const handleReouvrir = async (noteIds = []) => {
+        if (!noteIds.length) {
             toast.error('Sélectionnez au moins une note');
             return;
         }
 
-        const count = selectedIds.length;
-        const result = await handleSimpleOperation(
-            () => validerMasse(selectedIds),
-            `${count} note${count > 1 ? 's' : ''} validée${count > 1 ? 's' : ''} avec succès`,
-            'Erreur lors de la validation en masse'
-        );
+        const semestreId = filters.semestre_id;
+        const filiereId = filters.filiere_id;
+        const niveauId = filters.niveau_id;
 
-        if (result.success) {
-            setSelectedIds([]);
+        if (semestreId) {
+            try {
+                const status = await exportStatus({
+                    semestre_id: semestreId,
+                    filiere_id: filiereId,
+                    niveau_id: niveauId,
+                });
+
+                if (status?.has_export) {
+                    setReopenConfirm({ open: true, noteIds });
+                    return;
+                }
+            } catch {
+                // si la vérification échoue, on laisse l'action possible
+            }
         }
+
+        await executeReopen(noteIds);
     };
 
-    const tabs = [
-        { id: 'toutes', label: 'Toutes', count: counts.total },
-        { id: 'soumise', label: 'Soumises', count: counts.soumises },
-        { id: 'brouillon', label: 'Brouillons', count: counts.brouillons },
-    ];
+    const handleExport = async () => {
+        if (!filters.semestre_id) {
+            toast.error('Sélectionnez un semestre pour exporter.');
+            return;
+        }
+
+        try {
+            const blob = await exportExcel({
+                semestre_id: filters.semestre_id,
+                filiere_id: filters.filiere_id || null,
+                niveau_id: filters.niveau_id || null,
+            });
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'notes_export.zip';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+            toast.success('Export téléchargé avec succès');
+        } catch (err) {
+            toast.error(err?.message || "Erreur lors de l'export");
+        }
+    };
 
     const columns = [
         {
@@ -237,6 +291,21 @@ export default function NotesValidationPage() {
             ),
         },
         {
+            key: 'semestre',
+            label: 'SEMESTRE',
+            className: 'min-w-[140px] hidden lg:table-cell',
+            render: (_, row) => (
+                <div className="flex flex-col">
+                    <span className="text-sm text-gray-700 font-medium">
+                        {row.evaluation?.semestre?.numero ?? '—'}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                        {row.evaluation?.semestre?.annee ?? '—'}
+                    </span>
+                </div>
+            ),
+        },
+        {
             key: 'note',
             label: 'NOTE',
             className: 'w-28',
@@ -270,17 +339,42 @@ export default function NotesValidationPage() {
             className: 'w-20',
             render: (_, row) => (
                 <div className="flex justify-end">
-                    <NoteActionsMenu note={row} onValider={handleValiderUneNote} />
+                    <NoteActionsMenu note={row} onReouvrir={() => handleReouvrir([row.id])} />
                 </div>
             ),
         },
     ];
 
     const selectedFilters = {
+        semestre_id: filters.semestre_id || '',
+        filiere_id: filters.filiere_id || '',
+        niveau_id: filters.niveau_id || '',
         cours_id: filters.cours_id || '',
     };
 
+    const niveauxFiltres = useMemo(() => {
+        if (filters.filiere_id) {
+            return getNiveauxByFiliere(filters.filiere_id);
+        }
+        return niveauxOptions;
+    }, [filters.filiere_id, getNiveauxByFiliere, niveauxOptions]);
+
     const filterOptions = [
+        {
+            key: 'semestre_id',
+            placeholder: 'Semestre',
+            options: semestresOptions,
+        },
+        {
+            key: 'filiere_id',
+            placeholder: 'Filière',
+            options: activeFilieresOptions,
+        },
+        {
+            key: 'niveau_id',
+            placeholder: 'Niveau',
+            options: niveauxFiltres,
+        },
         {
             key: 'cours_id',
             placeholder: 'Cours',
@@ -289,29 +383,36 @@ export default function NotesValidationPage() {
     ];
 
     const rightAction = (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-gray-500">{selectedIds.length} sélectionnée(s)</span>
             <Button
                 size="sm"
-                onClick={handleValiderMasse}
-                disabled={selectedIds.length === 0 || isSubmitting}
+                variant="outline"
+                onClick={() => handleReouvrir(selectedIds)}
+                disabled={selectedIds.length === 0}
                 className="h-8"
             >
-                <CheckCheck className="w-4 h-4 mr-1.5" />
-                Valider la sélection
+                <RotateCcw className="w-4 h-4 mr-1.5" />
+                Réouvrir la sélection
+            </Button>
+            <Button
+                size="sm"
+                onClick={handleExport}
+                disabled={!filters.semestre_id}
+                className="h-8"
+            >
+                <Download className="w-4 h-4 mr-1.5" />
+                Exporter ZIP
             </Button>
         </div>
     );
 
     return (
         <ListPageLayout
-            title="Validation des notes"
-            description="Contrôlez les notes soumises ou en brouillon et validez-les pour lancer le recalcul académique."
+            title="Notes soumises"
+            description="Consultez les notes soumises et exportez-les par semestre."
         >
             <ListPageFilters
-                tabs={tabs}
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
                 searchValue={searchQuery}
                 onSearchChange={handleSearchChange}
                 searchPlaceholder="Étudiant, évaluation, cours..."
@@ -323,20 +424,20 @@ export default function NotesValidationPage() {
 
             {error && (
                 <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                    Impossible de charger les notes en attente: {error.message}
+                    Impossible de charger les notes soumises: {error.message}
                 </div>
             )}
 
             <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-3 text-sm text-blue-800 flex items-start gap-2">
                 <PencilLine className="w-4 h-4 mt-0.5 shrink-0" />
                 <p>
-                    Le professeur saisit/soumet les notes. L&apos;administrateur vérifie puis valide une note
-                    (ou un lot) pour la rendre définitive et déclencher les recalculs.
+                    Le professeur saisit et soumet les notes. L&apos;administrateur peut réouvrir une soumission
+                    si une correction est nécessaire, puis exporter les notes par semestre.
                 </p>
             </div>
 
             <DataTableSection
-                title="Notes en attente de validation"
+                title="Notes soumises"
                 columns={columns}
                 data={filteredNotes}
                 loading={loading}
@@ -348,10 +449,24 @@ export default function NotesValidationPage() {
             {!loading && filteredNotes.length === 0 && (
                 <div className="rounded-xl border border-gray-200 bg-white p-10 text-center text-gray-500">
                     <ClipboardCheck className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                    <p className="font-medium">Aucune note en attente</p>
-                    <p className="text-sm mt-1">Toutes les notes de ce périmètre sont déjà validées.</p>
+                    <p className="font-medium">Aucune note soumise</p>
+                    <p className="text-sm mt-1">Aucune soumission ne correspond à vos filtres.</p>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={reopenConfirm.open}
+                onClose={closeReopenConfirm}
+                onConfirm={async () => {
+                    await executeReopen(reopenConfirm.noteIds);
+                    closeReopenConfirm();
+                }}
+                loading={reopenLoading}
+                title="Réouvrir les notes ?"
+                message="Un export existe déjà pour ce semestre. Réouvrir va rendre cet export obsolète. Continuer ?"
+                confirmLabel="Réouvrir"
+                variant="warning"
+            />
         </ListPageLayout>
     );
 }

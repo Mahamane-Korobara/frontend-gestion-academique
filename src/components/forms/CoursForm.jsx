@@ -50,6 +50,7 @@ export default function CoursForm({
     useEffect(() => {
         if (!cours) return;
         const profAssigne = cours.professeurs?.[0];
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setFormData({
             titre:         cours.titre          || '',
             code:          cours.code           || '',
@@ -205,7 +206,7 @@ export default function CoursForm({
                     {/* Nombre d'heures */}
                     <FormInput
                         id="nombre_heures"
-                        label="Nombre d'heures (optionnel)"
+                        label="Nombre d&apos;heures (optionnel)"
                         type="number"
                         min={1}
                         value={formData.nombre_heures}
@@ -280,7 +281,7 @@ export default function CoursForm({
 
                         {profSelectionne && !showProfSelector && (
                             <p className="mt-1.5 text-[10px] text-gray-400">
-                                Cliquez sur pour changer le professeur responsable.
+                                Cliquez pour changer le professeur responsable.
                             </p>
                         )}
                     </div>
@@ -290,7 +291,7 @@ export default function CoursForm({
                         <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                         <p className="text-[11px] text-blue-600 leading-tight">
                             <span className="font-semibold">Rappel</span><br />
-                            L'assignation d'une salle se fera lors de la création de l'emploi du temps.
+                            L&apos;assignation d&apos;une salle se fera lors de la création de l&apos;emploi du temps.
                         </p>
                     </div>
                 </div>

@@ -28,7 +28,7 @@ export default function DashboardSection({ title, description, children, mobileC
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" className="w-full text-xs h-9">
-                  Voir tout l'historique
+                  Voir tout l&apos;historique
                 </Button>
               </SheetTrigger>
               <SheetContent className="sm:max-w-125 overflow-y-auto">

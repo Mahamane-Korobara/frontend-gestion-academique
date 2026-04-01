@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Pagination from './Pagination';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 
 /**
  * DataTable - Composant réutilisable pour afficher des données tabulaires
@@ -33,15 +33,11 @@ export default function DataTable({
   const [currentPage, setCurrentPage] = useState(1);
 
   // Pagination
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const totalPages = Math.max(1, Math.ceil(data.length / itemsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = data.slice(startIndex, endIndex);
-
-  // Réinitialiser à la page 1 si les données changent
-  useMemo(() => {
-    setCurrentPage(1);
-  }, [data]);
 
   return (
     <Card>
@@ -92,7 +88,7 @@ export default function DataTable({
         {data.length > itemsPerPage && (
           <div className="px-6">
             <Pagination
-              currentPage={currentPage}
+              currentPage={safePage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
               totalItems={data.length}

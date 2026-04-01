@@ -47,6 +47,7 @@ export default function NotesSaisieModal({
     const parsedErrors = useMemo(() => parseRowErrors(rowErrors), [rowErrors]);
 
     const resume = details?.resume || {};
+    const notesSoumises = resume.notes_soumises ?? resume.notes_validees ?? 0;
     const evaluation = details?.evaluation || null;
 
     const editableRowsCount = useMemo(
@@ -108,7 +109,7 @@ export default function NotesSaisieModal({
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                             <StatusBadge status={`Total: ${resume.total ?? 0}`} variant="info" />
                             <StatusBadge status={`Saisies: ${resume.notes_saisies ?? 0}`} variant="warning" />
-                            <StatusBadge status={`Validées: ${resume.notes_validees ?? 0}`} variant="success" />
+                            <StatusBadge status={`Soumises: ${notesSoumises}`} variant="success" />
                             <StatusBadge status={`Absents: ${resume.absents ?? 0}`} variant="default" />
                             <StatusBadge status={`Éditables: ${editableRowsCount}`} variant="info" />
                         </div>
@@ -183,7 +184,7 @@ export default function NotesSaisieModal({
                                                         </td>
                                                         <td className="px-3 py-2">
                                                             {isLocked ? (
-                                                                <StatusBadge status="Validée" variant="success" />
+                                                                <StatusBadge status="Soumise" variant="success" />
                                                             ) : (
                                                                 <StatusBadge status="Éditable" variant="warning" />
                                                             )}
@@ -209,7 +210,7 @@ export default function NotesSaisieModal({
                                                 <p className="text-xs text-gray-500">{row.matricule}</p>
                                                 <div className="mt-2">
                                                     {isLocked ? (
-                                                        <StatusBadge status="Validée" variant="success" />
+                                                        <StatusBadge status="Soumise" variant="success" />
                                                     ) : (
                                                         <StatusBadge status="Éditable" variant="warning" />
                                                     )}

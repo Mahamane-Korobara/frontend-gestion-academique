@@ -3,11 +3,6 @@
 
 import { Pie, PieChart as RechartsPieChart, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
-const data = [
-  { name: 'Femmes', value: 1300 },
-  { name: 'Hommes', value: 1150 },
-];
-
 const COLORS = ['#3b82f6', '#9ca3af'];
 
 export default function PieChart({ data = [] }) {

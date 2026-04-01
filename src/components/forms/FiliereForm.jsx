@@ -38,6 +38,7 @@ export default function FiliereForm({
   // Pré-remplissage en mode édition
   useEffect(() => {
     if (!filiere) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFormData({
       nom:          filiere.nom          || '',
       code:         filiere.code         || '',

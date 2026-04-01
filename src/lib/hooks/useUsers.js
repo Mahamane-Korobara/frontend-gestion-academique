@@ -92,7 +92,7 @@ export const useUsers = () => {
                 abortControllerRef.current.abort();
             }
         };
-    }, []); // Intentionnellement vide pour ne déclencher qu'une fois
+    }, [fetchUsers]);
 
     // Effet pour les changements de pagination/filtres (après l'initialisation)
     useEffect(() => {

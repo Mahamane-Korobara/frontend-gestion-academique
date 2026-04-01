@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Plus, CheckCircle, AlertTriangle, LogIn, Activity } from 'lucide-react';
 import Pagination from '@/components/partage/Pagination';
 
@@ -10,16 +10,12 @@ export default function RecentActivity({ activities = [] }) {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Pagination logic
-  const totalPages = Math.ceil(activities.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const totalPages = Math.max(1, Math.ceil(activities.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * ITEMS_PER_PAGE;
   const paginatedData = activities.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  // Reset page logic
-  useMemo(() => {
-    setCurrentPage(1);
-  }, [activities.length]);
-
-  const ActivityItem = ({ item, index }) => (
+  const ActivityItem = ({ item }) => (
     <div className="flex gap-4 py-4 px-6 border-b last:border-b-0 hover:bg-gray-50/50 transition-colors items-center">
       {/* Icône avec fond coloré selon l'action */}
       <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
@@ -99,13 +95,13 @@ export default function RecentActivity({ activities = [] }) {
       {/* Pagination style "Admin" */}
       {activities.length > ITEMS_PER_PAGE && (
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/30">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            totalItems={activities.length}
-            itemsPerPage={ITEMS_PER_PAGE}
-          />
+            <Pagination
+              currentPage={safePage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalItems={activities.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+            />
         </div>
       )}
     </div>

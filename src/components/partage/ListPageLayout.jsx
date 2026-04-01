@@ -27,8 +27,6 @@ export default function ListPageLayout({
 
   // États
   isSubmitting = false,
-  selectedItem = null,
-
   // Contenu des modals
   createModalTitle = 'Créer',
   createModalDescription = '',

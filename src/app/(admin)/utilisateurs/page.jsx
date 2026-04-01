@@ -53,7 +53,7 @@ export default function UtilisateursPage() {
     const inscriptionModal = useModal();
 
     // Hooks data
-    const { users, counts, loading: usersLoading, createUser, updateUser, deleteUser, resetPassword, applyFilters, filters: hookFilters } = useUsers();
+    const { users, counts, loading: usersLoading, createUser, updateUser, deleteUser, resetPassword, applyFilters } = useUsers();
     const { createMessage, loadConversation, fetchUnreadCount } = useMessages();
     const { activeFilieresOptions, loading: filieresLoading }   = useFilieres();
     const { niveauxOptions, getNiveauxByFiliere, loading: niveauxLoading } = useNiveaux();
