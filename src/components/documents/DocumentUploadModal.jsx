@@ -13,18 +13,9 @@ import FormSelect from '@/components/forms/FormSelect';
 // Hooks et Services
 import useDocumentFormOptions from '@/lib/hooks/useDocumentFormOptions';
 
-// Types de documents
-const DOCUMENT_TYPES = [
-  { value: 'pdf', label: 'PDF', accept: '.pdf', mimes: 'application/pdf' },
-  { value: 'word', label: 'Word', accept: '.doc,.docx', mimes: 'application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
-  { value: 'excel', label: 'Excel', accept: '.xls,.xlsx', mimes: 'application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
-  { value: 'powerpoint', label: 'PowerPoint', accept: '.ppt,.pptx', mimes: 'application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation' },
-  { value: 'image', label: 'Image', accept: '.jpg,.jpeg,.png,.gif,.webp', mimes: 'image/jpeg,image/png,image/gif,image/webp' }
-];
-
 const MAX_UPLOAD_MB = Math.max(
   1,
-  Number.parseInt(process.env.NEXT_PUBLIC_MAX_UPLOAD_MB || '2', 10) || 2
+  Number.parseInt(process.env.NEXT_PUBLIC_MAX_UPLOAD_MB || '50', 10) || 50
 );
 const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
@@ -34,7 +25,6 @@ export default function DocumentUploadModal({ onClose, onUploadDocument }) {
   const [formData, setFormData] = useState({
     titre: '',
     description: '',
-    type: 'pdf',
     filiere_id: '',
     niveau_id: '',
     cours_id: '',
@@ -68,10 +58,6 @@ export default function DocumentUploadModal({ onClose, onUploadDocument }) {
       newErrors.titre = 'Le titre ne peut pas dépasser 255 caractères';
     }
 
-    if (!formData.type) {
-      newErrors.type = 'Le type de document est requis';
-    }
-
     if (!formData.filiere_id) {
       newErrors.filiere_id = 'Veuillez sélectionner une filière';
     }
@@ -91,14 +77,7 @@ export default function DocumentUploadModal({ onClose, onUploadDocument }) {
         newErrors.fichier = `Le fichier ne doit pas dépasser ${MAX_UPLOAD_MB} MB`;
       }
 
-      // Vérifier le type MIME
-      const selectedType = DOCUMENT_TYPES.find(t => t.value === formData.type);
-      if (selectedType) {
-        const allowedMimes = selectedType.mimes.split(',');
-        if (!allowedMimes.includes(file.type)) {
-          newErrors.fichier = `Le fichier doit être de type ${selectedType.label}`;
-        }
-      }
+      // Pas de whitelist côté front (validation serveur stricte)
     }
 
     // Validation de la date
@@ -233,7 +212,6 @@ export default function DocumentUploadModal({ onClose, onUploadDocument }) {
       // Créer le FormData
       const formDataToSend = new FormData();
       formDataToSend.append('titre', formData.titre);
-      formDataToSend.append('type', formData.type);
       formDataToSend.append('filiere_id', formData.filiere_id);
       formDataToSend.append('niveau_id', formData.niveau_id);
       formDataToSend.append('cours_id', formData.cours_id);
@@ -258,7 +236,6 @@ export default function DocumentUploadModal({ onClose, onUploadDocument }) {
       setFormData({
         titre: '',
         description: '',
-        type: 'pdf',
         filiere_id: '',
         niveau_id: '',
         cours_id: '',
@@ -321,7 +298,6 @@ export default function DocumentUploadModal({ onClose, onUploadDocument }) {
               id="fichier"
               type="file"
               onChange={handleFileChange}
-              accept={DOCUMENT_TYPES.find(t => t.value === formData.type)?.accept}
               className="hidden"
               disabled={isSubmitting || optionsLoading}
             />
@@ -361,22 +337,6 @@ export default function DocumentUploadModal({ onClose, onUploadDocument }) {
           <p className="text-sm text-red-600 mt-1">{errors.fichier}</p>
         )}
       </div>
-
-      {/* Type de document */}
-      <FormSelect
-        id="type"
-        label="Type de document"
-        value={formData.type}
-        onValueChange={(value) => {
-          handleSelectChange('type', value);
-          // Réinitialiser le fichier si le type change
-          handleRemoveFile();
-        }}
-        options={DOCUMENT_TYPES}
-        error={errors.type}
-        disabled={isSubmitting || optionsLoading}
-        required
-      />
 
       {/* Titre */}
       <FormInput

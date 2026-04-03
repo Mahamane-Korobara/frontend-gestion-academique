@@ -34,6 +34,8 @@ export default function DocumentsPage() {
   const [activeTab, setActiveTab] = useState('tous');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDocument, setSelectedDocument] = useState(null);
+  const [previewContent, setPreviewContent] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const viewModal = useModal();
   const deleteModal = useModal();
@@ -46,6 +48,7 @@ export default function DocumentsPage() {
     uploadDocument,
     deleteDocument, 
     downloadDocument,
+    previewDocument,
     canUpload,
     canDelete,
   } = useDocuments();
@@ -70,7 +73,20 @@ export default function DocumentsPage() {
   };
 
   const handleDownload = (doc) => {
-    downloadDocument(doc.id, doc.fichier_original || doc.titre);
+    downloadDocument(doc.uuid, doc.original_name || doc.titre);
+  };
+
+  const handleLoadPreview = async () => {
+    if (!selectedDocument?.uuid || !selectedDocument?.preview_url) return;
+    try {
+      setPreviewLoading(true);
+      const content = await previewDocument(selectedDocument.uuid);
+      setPreviewContent(content || '');
+    } catch (err) {
+      console.error('Erreur lors de la prévisualisation:', err);
+    } finally {
+      setPreviewLoading(false);
+    }
   };
 
   // ============ CONFIGURATION DES COLONNES ============
@@ -79,10 +95,10 @@ export default function DocumentsPage() {
       key: 'doc-titre',
       label: 'DOCUMENT',
       className: 'min-w-[280px]',
-      render: (_, row) => (
+          render: (_, row) => (
         <div className="flex items-start gap-3 py-2">
           <div className="shrink-0 w-8 h-8 flex items-center justify-center text-xl">
-            {getTypeIcon(row.type)}
+            {getTypeIcon(row)}
           </div>
           <div className="flex flex-col min-w-0">
             <span className="font-bold text-sm text-gray-800 truncate">{row.titre}</span>
@@ -95,9 +111,9 @@ export default function DocumentsPage() {
       key: 'doc-type',
       label: 'TYPE',
       className: 'min-w-[120px] hidden lg:table-cell',
-      render: (_, row) => (
+          render: (_, row) => (
         <InfoBadge 
-          label={getTypeLabel(row.type)} 
+          label={getTypeLabel(row)} 
           variant="blue"
         />
       )
@@ -133,13 +149,13 @@ export default function DocumentsPage() {
       key: 'doc-actions',
       label: 'ACTIONS',
       className: 'w-[80px]',
-      render: (_, row) => (
+          render: (_, row) => (
         <div className="flex justify-end">
           <DocumentActionsMenu 
             document={row} 
             currentUserId={user?.id}
             canDelete={canDelete}
-            onView={(d) => { setSelectedDocument(d); viewModal.open(); }} 
+            onView={(d) => { setSelectedDocument(d); setPreviewContent(''); viewModal.open(); }} 
             onDownload={handleDownload}
             onDelete={(d) => { setSelectedDocument(d); deleteModal.open(); }} 
           />
@@ -149,7 +165,14 @@ export default function DocumentsPage() {
   ];
 
   // ============ MODAL CONTENT ============
-  const viewModalContent = <DocumentViewModal document={selectedDocument} />;
+  const viewModalContent = (
+    <DocumentViewModal 
+      document={selectedDocument} 
+      previewContent={previewContent}
+      previewLoading={previewLoading}
+      onLoadPreview={handleLoadPreview}
+    />
+  );
   const uploadModalContent = (
     <DocumentUploadModal
       onClose={uploadModal.close}
@@ -196,11 +219,12 @@ export default function DocumentsPage() {
         stats={stats}
         tabs={[
           { id: 'tous', label: 'Tous', count: documents?.length || 0 },
-          { id: 'pdf', label: 'PDF', count: countDocumentsByType(documents, 'pdf') },
-          { id: 'word', label: 'Word', count: countDocumentsByType(documents, 'word') },
-          { id: 'excel', label: 'Excel', count: countDocumentsByType(documents, 'excel') },
-          { id: 'powerpoint', label: 'PowerPoint', count: countDocumentsByType(documents, 'powerpoint') },
-          { id: 'image', label: 'Images', count: countDocumentsByType(documents, 'image') }
+          { id: 'docs', label: 'Docs', count: countDocumentsByType(documents, 'docs') },
+          { id: 'data', label: 'Data', count: countDocumentsByType(documents, 'data') },
+          { id: 'code', label: 'Code', count: countDocumentsByType(documents, 'code') },
+          { id: 'images', label: 'Images', count: countDocumentsByType(documents, 'images') },
+          { id: 'archives', label: 'Archives', count: countDocumentsByType(documents, 'archives') },
+          { id: 'autres', label: 'Autres', count: countDocumentsByType(documents, 'autres') }
         ]}
         activeTab={activeTab}
         onTabChange={setActiveTab}

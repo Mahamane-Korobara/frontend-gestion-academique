@@ -60,7 +60,6 @@ const MENU_CONFIG = {
       section: 'MES ÉTUDES',
       items: [
         { title: 'Mes Notes', icon: ClipboardCheck, href: '/etudiant/mes-notes' },
-        { title: 'Mes Bulletins', icon: FileText, href: '/etudiant/mes-bulletins' },
         { title: 'Mes Cours', icon: BookMarked, href: '/etudiant/mes-cours' },
         { title: 'Emploi du Temps', icon: Calendar, href: '/etudiant/emploi-du-temps' },
       ],

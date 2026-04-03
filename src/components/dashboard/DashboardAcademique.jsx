@@ -17,14 +17,10 @@ export default function DashboardAcademique({ academique = {} }) {
       label: 'Notes Saisies',
       value: academique.notes_saisies || '0',
     },
-    {
-      label: 'Bulletins Générés',
-      value: academique.bulletins_genres || '0',
-    },
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-3">
       {data.map((item, idx) => (
         <Card key={idx}>
           <CardHeader className="pb-2">

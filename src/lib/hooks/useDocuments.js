@@ -23,7 +23,7 @@ export default function useDocuments() {
         filiere_id: null,
         niveau_id: null,
         cours_id: null,
-        type: null,
+        extension: null,
     });
 
     // Référence pour éviter les doubles appels en Strict Mode
@@ -65,7 +65,7 @@ export default function useDocuments() {
             if (filters.filiere_id) params.filiere_id = filters.filiere_id;
             if (filters.niveau_id) params.niveau_id = filters.niveau_id;
             if (filters.cours_id) params.cours_id = filters.cours_id;
-            if (filters.type) params.type = filters.type;
+            if (filters.extension) params.extension = filters.extension;
 
             // Utiliser l'API appropriée selon le rôle
             const api = getDocumentsAPI();
@@ -194,15 +194,15 @@ export default function useDocuments() {
      * Télécharger (download) un document
      * DISPONIBLE POUR TOUS (professeurs et étudiants)
      */
-    const downloadDocument = useCallback(async (documentId, fileName = 'document') => {
+    const downloadDocument = useCallback(async (uuid, fileName = 'document') => {
         try {
-            if (!documentId) {
-                throw new Error('ID du document non fourni');
+            if (!uuid) {
+                throw new Error('UUID du document non fourni');
             }
 
             // Utiliser l'API appropriée selon le rôle
             const api = getDocumentsAPI();
-            const blob = await api.download(documentId);
+            const blob = await api.download(uuid);
 
             // Créer un URL temporaire pour le blob
             const url = window.URL.createObjectURL(blob);
@@ -221,6 +221,18 @@ export default function useDocuments() {
             console.error('Erreur lors du téléchargement du document:', err);
             throw err;
         }
+    }, [getDocumentsAPI]);
+
+    /**
+     * Prévisualiser un document texte
+     */
+    const previewDocument = useCallback(async (uuid) => {
+        if (!uuid) {
+            throw new Error('UUID du document non fourni');
+        }
+
+        const api = getDocumentsAPI();
+        return api.preview(uuid);
     }, [getDocumentsAPI]);
 
     // ============ MÉTHODES DE FILTRAGE ============
@@ -249,10 +261,10 @@ export default function useDocuments() {
         setPagination((prev) => ({ ...prev, currentPage: 1 }));
     }, []);
 
-    const setType = useCallback((type) => {
+    const setExtension = useCallback((extension) => {
         setFilters((prev) => ({
             ...prev,
-            type: type,
+            extension: extension,
         }));
         setPagination((prev) => ({ ...prev, currentPage: 1 }));
     }, []);
@@ -262,7 +274,7 @@ export default function useDocuments() {
             filiere_id: null,
             niveau_id: null,
             cours_id: null,
-            type: null,
+            extension: null,
         });
         setPagination((prev) => ({ ...prev, currentPage: 1 }));
     }, []);
@@ -302,12 +314,13 @@ export default function useDocuments() {
         uploadDocument,
         deleteDocument,
         downloadDocument,
+        previewDocument,
 
         // Méthodes de filtrage
         setFiliere,
         setNiveau,
         setCours,
-        setType,
+        setExtension,
         resetFilters,
 
         // Méthodes de pagination

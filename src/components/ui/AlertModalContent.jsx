@@ -25,7 +25,7 @@ export default function AlertModalContent({ alert, onClose, onNavigate }) {
         if (isCoursSansEvaluationsAlert) {
             return (
                 `${baseDescription} ` +
-                `Chaque cours doit avoir au moins une évaluation pour permettre la saisie des notes et la génération correcte des bulletins.`
+                `Chaque cours doit avoir au moins une évaluation pour permettre la saisie des notes.`
             );
         }
         return baseDescription;

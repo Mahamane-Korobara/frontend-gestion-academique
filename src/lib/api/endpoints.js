@@ -127,16 +127,6 @@ export const notesAdminAPI = {
     exportExcel: (data) => apiClient.downloadPost('/admin/notes/export', data),
 };
 
-// ============================================
-// ADMIN - BULLETINS
-// ============================================
-export const bulletinsAdminAPI = {
-    getAll: (params) => apiClient.get('/admin/bulletins', params),
-    genererSemestre: (etudiantId, semestreId) => apiClient.post(`/admin/bulletins/etudiants/${etudiantId}/semestres/${semestreId}/generer`),
-    getSemestre: (etudiantId, semestreId) => apiClient.get(`/admin/bulletins/etudiants/${etudiantId}/semestres/${semestreId}`),
-    genererAnnuel: (etudiantId, anneeId) => apiClient.post(`/admin/bulletins/etudiants/${etudiantId}/annees/${anneeId}/generer`),
-    getAnnuel: (etudiantId, anneeId) => apiClient.get(`/admin/bulletins/etudiants/${etudiantId}/annees/${anneeId}`),
-};
 
 // ============================================
 // ADMIN - EMPLOIS DU TEMPS
@@ -167,6 +157,13 @@ export const annoncesAdminAPI = {
 // ============================================
 export const dashboardAdminAPI = {
     getStats: () => apiClient.get('/admin/dashboard'),
+};
+
+// ============================================
+// ADMIN - RAPPORTS (EXPORTS)
+// ============================================
+export const rapportsAdminAPI = {
+    exportData: (data) => apiClient.downloadPost('/admin/rapports/export', data),
 };
 
 // ============================================
@@ -210,10 +207,8 @@ export const annoncesProfesseurAPI = {
 // ============================================
 export const etudiantAPI = {
     getDashboard: () => apiClient.get('/etudiant/dashboard'),
-    getBulletins: () => apiClient.get('/etudiant/bulletins'),
     getNotes: (params) => apiClient.get('/etudiant/notes', params),
     getCours: () => apiClient.get('/etudiant/cours'),
-    downloadBulletin: (bulletinId) => apiClient.download(`/etudiant/bulletins/${bulletinId}/pdf`),
 };
 
 // ============================================
@@ -257,7 +252,8 @@ export const documentsAPI = {
     getAll: (params) => apiClient.get('/professeur/documents', params),
     create: (data) => apiClient.post('/professeur/documents', data, true),
     delete: (id) => apiClient.delete(`/professeur/documents/${id}`),
-    download: (id) => apiClient.download(`/professeur/documents/${id}/download`),
+    download: (uuid) => apiClient.download(`/documents/download/${uuid}`),
+    preview: (uuid) => apiClient.get(`/documents/preview/${uuid}`),
 };
 
 // ============================================
@@ -266,5 +262,6 @@ export const documentsAPI = {
 
 export const documentsEtudiantAPI = {
     getAll: (params) => apiClient.get('/etudiant/documents', params),
-    download: (id) => apiClient.download(`/etudiant/documents/${id}/download`),
+    download: (uuid) => apiClient.download(`/documents/download/${uuid}`),
+    preview: (uuid) => apiClient.get(`/documents/preview/${uuid}`),
 };

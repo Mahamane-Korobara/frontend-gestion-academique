@@ -48,9 +48,11 @@ export default function MessagerieSection() {
   const { user } = useAuth();
   
   // Utiliser le hook approprié selon le rôle (hooks toujours appelés)
-  const isProfesseur = user?.role?.name === 'professeur';
-  const professeurDirectory = useProfesseurDirectory();
-  const usersDirectory = useUsers();
+  const roleName = user?.role?.name;
+  const isProfesseur = roleName === 'professeur';
+  const isAdmin = roleName === 'admin';
+  const professeurDirectory = useProfesseurDirectory({ enabled: isProfesseur });
+  const usersDirectory = useUsers({ enabled: isAdmin });
   const { users, loading: usersLoading, error: usersError } = isProfesseur
     ? professeurDirectory
     : usersDirectory;

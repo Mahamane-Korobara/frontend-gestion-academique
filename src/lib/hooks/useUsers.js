@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { usersService } from '@/lib/services/users.service';
 
-export const useUsers = () => {
+export const useUsers = ({ enabled = true } = {}) => {
     const [users, setUsers] = useState([]);
     const [counts, setCounts] = useState({ etudiant: 0, professeur: 0 });
     const [loading, setLoading] = useState(false);
@@ -32,6 +32,9 @@ export const useUsers = () => {
 
     // Fonction de fetch principale
     const fetchUsers = useCallback(async (shouldResetInitialFlag = false) => {
+        if (!enabled) {
+            return;
+        }
         // Annuler la requête précédente si elle existe
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
@@ -78,11 +81,11 @@ export const useUsers = () => {
                 setLoading(false);
             }
         }
-    }, [pagination.currentPage, pagination.perPage, filters]);
+    }, [pagination.currentPage, pagination.perPage, filters, enabled]);
 
     // Effet initial : charger les données une seule fois
     useEffect(() => {
-        if (!initialFetchDone.current) {
+        if (enabled && !initialFetchDone.current) {
             fetchUsers(true);
         }
 
@@ -92,14 +95,14 @@ export const useUsers = () => {
                 abortControllerRef.current.abort();
             }
         };
-    }, [fetchUsers]);
+    }, [fetchUsers, enabled]);
 
     // Effet pour les changements de pagination/filtres (après l'initialisation)
     useEffect(() => {
-        if (initialFetchDone.current) {
+        if (enabled && initialFetchDone.current) {
             fetchUsers();
         }
-    }, [pagination.currentPage, filters, fetchUsers]);
+    }, [pagination.currentPage, filters, fetchUsers, enabled]);
 
     // Mettre à jour la pagination
     const updatePagination = useCallback((page) => {
