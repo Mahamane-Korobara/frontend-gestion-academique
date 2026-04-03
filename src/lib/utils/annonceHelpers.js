@@ -21,6 +21,23 @@ export const getCibleText = (cible) => {
         return `${cible.niveau?.nom || 'Niveau'} - ${cible.filiere?.nom || ''}`.trim();
     }
     if (cible.type === 'cours') return cible.cours?.titre || 'Cours';
+    if (cible.type === 'individuelle') return 'Individuelle';
+    return 'Non défini';
+};
+
+/**
+ * Cible avec fallback si le backend ne renvoie pas "cible" (ex: étudiant)
+ */
+export const getCibleTextFromAnnonce = (annonce) => {
+    if (!annonce) return 'Non défini';
+    if (annonce.cible) return getCibleText(annonce.cible);
+
+    const typeCode = normalizeTypeCode(annonce.type);
+    if (typeCode === 'globale') return 'Globale';
+    if (typeCode === 'filiere') return 'Filière';
+    if (typeCode === 'niveau') return 'Niveau';
+    if (typeCode === 'cours') return 'Cours';
+    if (typeCode === 'individuelle') return 'Individuelle';
     return 'Non défini';
 };
 
@@ -102,8 +119,8 @@ export const getAnnonceStats = (annonces, userId = null) => {
         : annonces;
 
     return {
-        totalEnvoyees: userAnnonces.filter(a => a.is_active).length,
-        totalBrouillons: userAnnonces.filter(a => !a.is_active).length,
+        totalEnvoyees: userAnnonces.filter(a => a.is_active !== false).length,
+        totalBrouillons: userAnnonces.filter(a => a.is_active === false).length,
         total: userAnnonces.length
     };
 };
@@ -112,12 +129,12 @@ export const getAnnonceStats = (annonces, userId = null) => {
  * Obtient le label de statut pour une annonce
  */
 export const getAnnonceStatusLabel = (isActive) => {
-    return isActive ? 'Envoyé' : 'Brouillon';
+    return isActive === false ? 'Brouillon' : 'Envoyé';
 };
 
 /**
  * Obtient la variante de badge pour le statut
  */
 export const getAnnonceStatusVariant = (isActive) => {
-    return isActive ? 'success' : 'warning';
+    return isActive === false ? 'warning' : 'success';
 };

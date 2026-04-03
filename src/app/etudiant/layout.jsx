@@ -8,20 +8,18 @@ export const metadata = {
 
 export default function EtudiantLayout({ children }) {
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="h-screen flex overflow-hidden">
       {/* Sidebar Desktop */}
-      <div className="hidden lg:block">
-        <Sidebar />
-      </div>
+      <Sidebar />
 
       {/* Sidebar Mobile */}
-      <div className="lg:hidden">
-        <MobileSidebar />
-      </div>
+      <MobileSidebar />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {children}
+        <main className="flex-1 overflow-auto bg-gray-50">
+          {children}
+        </main>
       </div>
     </div>
   );

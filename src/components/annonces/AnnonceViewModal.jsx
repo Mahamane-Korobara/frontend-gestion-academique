@@ -1,3 +1,5 @@
+import { getCibleTextFromAnnonce } from '@/lib/utils/annonceHelpers';
+
 export default function AnnonceViewModal({ annonce }) {
   if (!annonce) return null;
 
@@ -6,13 +8,7 @@ export default function AnnonceViewModal({ annonce }) {
     return icons[priorite?.code] || '📌';
   };
 
-  const getCibleText = (cible) => {
-    if (cible.type === 'globale') return 'Globale';
-    if (cible.type === 'filiere') return cible.filiere?.nom || 'Filière';
-    if (cible.type === 'niveau') return `${cible.niveau?.nom || 'Niveau'} - ${cible.filiere?.nom || ''}`;
-    if (cible.type === 'cours') return cible.cours?.titre || 'Cours';
-    return 'Non défini';
-  };
+  const auteurName = annonce.auteur?.name || annonce.auteur || '—';
 
   return (
     <div className="space-y-4">
@@ -28,8 +24,8 @@ export default function AnnonceViewModal({ annonce }) {
         <p className="text-sm text-gray-600 mt-2">{annonce.contenu}</p>
       </div>
       <div className="grid grid-cols-2 gap-4 pt-4 border-t text-sm">
-        <div><span className="text-gray-500">Cible:</span> {getCibleText(annonce.cible)}</div>
-        <div><span className="text-gray-500">Auteur:</span> {annonce.auteur?.name}</div>
+        <div><span className="text-gray-500">Cible:</span> {getCibleTextFromAnnonce(annonce)}</div>
+        <div><span className="text-gray-500">Auteur:</span> {auteurName}</div>
       </div>
     </div>
   );

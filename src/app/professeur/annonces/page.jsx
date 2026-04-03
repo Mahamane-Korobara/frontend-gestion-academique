@@ -28,7 +28,7 @@ import { useModalOperations } from '@/lib/hooks/useModalOperations';
 // Helpers
 import {
   getPriorityIcon,
-  getCibleText,
+  getCibleTextFromAnnonce,
   filterAnnonces,
   countAnnoncesByType,
   getAnnonceStats,
@@ -92,7 +92,7 @@ export default function AnnoncesPage() {
       className: 'min-w-[140px] hidden md:table-cell',
       render: (_, row) => (
         <InfoBadge 
-          label={getCibleText(row.cible)} 
+          label={getCibleTextFromAnnonce(row)} 
           variant="blue"
         />
       )

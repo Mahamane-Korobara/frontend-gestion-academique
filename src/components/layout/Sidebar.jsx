@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, Users, GraduationCap, Network, BarChart3, 
-  Settings, BookMarked, Calendar, FileText, MessageSquare, 
+  BookMarked, Calendar, FileText, MessageSquare, 
   File, ClipboardCheck, TrendingUp, CheckCircle, Megaphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
@@ -32,7 +32,6 @@ const MENU_CONFIG = {
       section: 'ADMINISTRATION',
       items: [
         { title: 'Rapports', icon: BarChart3, href: '/rapports' },
-        { title: 'Paramètres', icon: Settings, href: '/parametres' },
       ],
     },
   ],

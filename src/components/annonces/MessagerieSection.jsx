@@ -51,6 +51,7 @@ export default function MessagerieSection() {
   const roleName = user?.role?.name;
   const isProfesseur = roleName === 'professeur';
   const isAdmin = roleName === 'admin';
+  const isEtudiant = roleName === 'etudiant';
   const professeurDirectory = useProfesseurDirectory({ enabled: isProfesseur });
   const usersDirectory = useUsers({ enabled: isAdmin });
   const { users, loading: usersLoading, error: usersError } = isProfesseur
@@ -69,6 +70,7 @@ export default function MessagerieSection() {
 
   // Filtrer les utilisateurs (exclure l'utilisateur connecté)
   const availableUsers = users.filter((u) => u.id !== user?.id);
+  const canStartConversation = !isEtudiant;
 
   // Construire la liste des conversations (SIMPLIFIÉ)
   useEffect(() => {
@@ -186,15 +188,17 @@ export default function MessagerieSection() {
           <div className="p-3 sm:p-4 border-b bg-white">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <h2 className="text-lg sm:text-xl font-bold text-gray-900">Messages</h2>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="rounded-full p-2 hover:bg-gray-100"
-                onClick={() => setIsNewConversationModalOpen(true)}
-                title="Nouvelle conversation"
-              >
-                <Plus className="w-5 h-5 text-gray-600" />
-              </Button>
+              {canStartConversation && (
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="rounded-full p-2 hover:bg-gray-100"
+                  onClick={() => setIsNewConversationModalOpen(true)}
+                  title="Nouvelle conversation"
+                >
+                  <Plus className="w-5 h-5 text-gray-600" />
+                </Button>
+              )}
             </div>
             
             {/* Barre de recherche */}
@@ -308,14 +312,16 @@ export default function MessagerieSection() {
       </div>
 
       {/* Modal pour créer une nouvelle conversation */}
-      <NewConversationModal
-        isOpen={isNewConversationModalOpen}
-        onClose={() => setIsNewConversationModalOpen(false)}
-        users={availableUsers}
-        usersLoading={usersLoading}
-        usersError={usersError}
-        onSelectUserAndSendMessage={handleSelectUserAndSendMessage}
-      />
+      {canStartConversation && (
+        <NewConversationModal
+          isOpen={isNewConversationModalOpen}
+          onClose={() => setIsNewConversationModalOpen(false)}
+          users={availableUsers}
+          usersLoading={usersLoading}
+          usersError={usersError}
+          onSelectUserAndSendMessage={handleSelectUserAndSendMessage}
+        />
+      )}
     </Card>
   );
 }

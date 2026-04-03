@@ -1,14 +1,16 @@
 /**
  * Service pour la gestion des annonces
- * Fonctionne pour Admin et Professeur
+ * Fonctionne pour Admin, Professeur et Étudiant
  */
-import { annoncesAdminAPI, annoncesProfesseurAPI } from '@/lib/api/endpoints';
+import { annoncesAdminAPI, annoncesProfesseurAPI, annoncesEtudiantAPI } from '@/lib/api/endpoints';
 
 /**
  * Détermine quel API utiliser selon le rôle
  */
 const getAPI = (role) => {
-    return role === 'professeur' ? annoncesProfesseurAPI : annoncesAdminAPI;
+    if (role === 'professeur') return annoncesProfesseurAPI;
+    if (role === 'etudiant') return annoncesEtudiantAPI;
+    return annoncesAdminAPI;
 };
 
 export const annoncesService = {
